@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Super Admin - Sistem Skrining</title>
+  <script>window.IS_ADMIN_PAGE = true;</script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container { background: white; padding: 20px; border-radius: 8px; }
+    .btn-primary { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-secondary { background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
+      padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;
+    }
+    .alert { padding: 12px; border-radius: 4px; margin: 10px 0; }
+    .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .pin-display { font-size: 48px; font-weight: bold; color: #007bff; text-align: center; padding: 30px; background: #f0f0f0; border-radius: 8px; letter-spacing: 10px; }
+    .hidden { display: none !important; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .badge-success { background: #28a745; color: white; }
+    .badge-warning { background: #ffc107; color: black; }
+    .badge-danger { background: #dc3545; color: white; }
+    .nav-tabs { display: flex; gap: 10px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+    .nav-tab { padding: 10px 20px; background: #f0f0f0; border: none; cursor: pointer; border-radius: 4px 4px 0 0; }
+    .nav-tab.active { background: #007bff; color: white; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>⚙️ Portal Super Admin</h1>
+    <hr>
+
+    <!-- ================= AUTH STATUS BAR ================= -->
+    <div id="auth-status-bar">
+      <div id="auth-guest" style="display: block;">
+        <p>
+          <strong>Status:</strong> Belum Login |
+          <button class="btn-primary" id="btn-show-login">Login Super Admin</button>
+        </p>
+      </div>
+      <div id="auth-user" style="display: none;">
+        <p>
+          <strong>Login sebagai:</strong> <span id="current-user-name">-</span>
+          (<span id="current-user-email">-</span>) |
+          Role: <span id="current-user-role">-</span> |
+          <button class="btn-danger" id="btn-logout">Logout</button>
+        </p>
+      </div>
+    </div>
+    <hr>
+
+    <!-- ================= SECTION: LOGIN FORM ================= -->
+    <div id="section-auth" class="hidden">
+      <div id="box-login">
+        <h2>Login Super Admin</h2>
+        <form id="form-login">
+          <p>
+            <label for="login-email">Email:</label><br>
+            <input type="email" id="login-email" placeholder="contoh@email.com" required style="width: 300px;">
+          </p>
+          <p>
+            <label for="login-password">Password:</label><br>
+            <input type="password" id="login-password" placeholder="Password" required style="width: 300px;">
+          </p>
+          <p>
+            <button type="submit" class="btn-primary">Login</button>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('section-auth').classList.add('hidden')">Batal</button>
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: STUDENT PIN ENTRY (PUBLIC) ================= -->
+    <div id="section-student-pin" class="hidden">
+      <h2>📝 Masukkan PIN Sesi Tes</h2>
+      <p>Tanyakan kode PIN sesi kepada guru atau konselor Anda.</p>
+      <form id="form-pin-entry">
+        <p style="text-align: center;">
+          <input type="text" id="input-pin" placeholder="Masukkan PIN (6 karakter)" maxlength="6" required 
+                 style="width: 200px; font-size: 24px; text-align: center; letter-spacing: 5px; padding: 10px;">
+        </p>
+        <p style="text-align: center;">
+          <button type="submit" class="btn-primary" style="font-size: 16px; padding: 12px 40px;">Mulai Tes</button>
+        </p>
+      </form>
+      <div id="pin-error-message" class="alert alert-error hidden"></div>
+    </div>
+
+    <!-- ================= SECTION: STUDENT INFO FORM (AFTER PIN VALIDATION) ================= -->
+    <div id="section-student-info" class="hidden">
+      <h2>✏️ Data Peserta Tes</h2>
+      <p>Silakan isi informasi Anda. Jenjang akan otomatis diisi berdasarkan PIN.</p>
+      <form id="form-student-info">
+        <p>
+          <label for="info-level"><strong>Jenjang:</strong></label><br>
+          <input type="text" id="info-level" readonly style="width: 300px;">
+        </p>
+        <p>
+          <label for="info-name"><strong>Nama Lengkap:</strong></label><br>
+          <input type="text" id="info-name" placeholder="Nama Lengkap" required style="width: 300px;">
+        </p>
+        <p>
+          <label for="info-age"><strong>Usia (Tahun):</strong></label><br>
+          <input type="number" id="info-age" placeholder="Contoh: 10" required style="width: 300px;">
+        </p>
+        <p>
+          <label for="info-grade"><strong>Kelas:</strong></label><br>
+          <input type="text" id="info-grade" placeholder="Contoh: Kelas 4 SD / 8 SMP" required style="width: 300px;">
+        </p>
+        <p>
+          <button type="submit" class="btn-primary">Lanjut ke Tes</button>
+          <button type="button" class="btn-secondary" onclick="backToPin()">Kembali</button>
+        </p>
+      </form>
+    </div>
+
+    <!-- ================= SECTION: TEST ================= -->
+    <div id="section-test" class="hidden">
+      <p>
+        <strong>Peserta:</strong> <span id="test-student-info">-</span> |
+        <strong>Jenjang:</strong> <span id="test-level-badge">-</span> |
+        <strong>Sisa Waktu:</strong> <span id="test-timer">20:00</span> |
+        <strong>Progress:</strong> <span id="test-progress">0 / 0</span>
+      </p>
+      <hr>
+      <div id="question-box">
+        <h3 id="q-number-title">Soal 1</h3>
+        <p><strong>Kategori:</strong> <span id="q-category">-</span> | <strong>Kesulitan:</strong> <span id="q-difficulty">-</span></p>
+        <p id="q-text" style="font-size: 1.1em; font-weight: bold;">Teks Soal</p>
+        <form id="options-form">
+          <div id="options-container"></div>
+        </form>
+        <br>
+        <div>
+          <button type="button" class="btn-secondary" id="btn-prev">« Sebelumnya</button>
+          <button type="button" class="btn-secondary" id="btn-next">Berikutnya »</button>
+          <button type="button" class="btn-secondary" id="btn-doubt">Tandai Ragu-ragu</button>
+          <button type="button" class="btn-primary" id="btn-submit" style="font-size: 1.1em;">Selesaikan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: ADMIN DASHBOARD ================= -->
+    <div id="section-admin" class="hidden">
+      <h2>📊 Dashboard Admin</h2>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showAdminTab('rooms')">Kelola Sesi PIN</button>
+        <button class="nav-tab" onclick="showAdminTab('results')">Riwayat Hasil Sesi</button>
+        <button class="nav-tab" onclick="showAdminTab('superadmin')" id="tab-superadmin" class="hidden">Super Admin</button>
+      </div>
+
+      <!-- TAB: ROOMS (Admin Sekolah) -->
+      <div id="admin-tab-rooms" class="hidden">
+        <h3>🔑 Kelola Sesi PIN</h3>
+        <p>Buat kode sesi baru untuk siswa.</p>
+        <p>
+          <label for="admin-room-level">Pilih Jenjang:</label>
+          <select id="admin-room-level">
+            <option value="SD">SD (Sekolah Dasar)</option>
+            <option value="SMP">SMP (Sekolah Menengah Pertama)</option>
+          </select>
+          <button class="btn-primary" id="btn-generate-room">Generate PIN Baru</button>
+        </p>
+        <div id="admin-room-result" class="hidden">
+          <div class="alert alert-success">PIN berhasil dibuat!</div>
+          <p style="text-align: center;">
+            <strong>Kode Sesi:</strong><br>
+            <div class="pin-display" id="admin-pin-display">XXXXXX</div>
+          </p>
+          <p style="text-align: center;">
+            <button class="btn-secondary" onclick="copyPin()">📋 Salin PIN</button>
+            <button class="btn-secondary" onclick="resetRoomResult()">Buat PIN Lagi</button>
+          </p>
+        </div>
+
+        <h4>Daftar Sesi Aktif</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>PIN</th>
+              <th>Jenjang</th>
+              <th>Status</th>
+              <th>Dibuat</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="admin-rooms-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB: RESULTS (Admin Sekolah) -->
+      <div id="admin-tab-results" class="hidden">
+        <h3>📈 Riwayat Hasil Sesi</h3>
+        <p>Hasil tes dikelompokkan per sesi PIN.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>PIN Sesi</th>
+              <th>Jenjang</th>
+              <th>Nama Siswa</th>
+              <th>Kelas</th>
+              <th>Skor IQ</th>
+              <th>Hasil</th>
+              <th>Waktu</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="admin-results-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB: SUPERADMIN -->
+      <div id="admin-tab-superadmin" class="hidden">
+        <h3>🔐 Panel Superadmin</h3>
+        
+        <h4>Pengaturan Skor Minimum Global</h4>
+        <p>
+          <label for="superadmin-min-score">Skor Minimum:</label>
+          <input type="number" id="superadmin-min-score" min="0" max="100" style="width: 100px;">
+          <button class="btn-primary" id="btn-update-min-score">Update</button>
+        </p>
+        <div id="superadmin-min-score-result" class="hidden"></div>
+
+        <h4>Buat Admin Sekolah</h4>
+        <form id="form-create-admin">
+          <p>
+            <label for="admin-school-id">Pilih Sekolah:</label><br>
+            <select id="admin-school-id" required style="width: 300px;"></select>
+          </p>
+          <p>
+            <label for="admin-name">Nama Admin:</label><br>
+            <input type="text" id="admin-name" placeholder="Nama Lengkap" required style="width: 300px;">
+          </p>
+          <p>
+            <label for="admin-email">Email:</label><br>
+            <input type="email" id="admin-email" placeholder="admin@example.com" required style="width: 300px;">
+          </p>
+          <p>
+            <label for="admin-password">Password:</label><br>
+            <input type="password" id="admin-password" placeholder="Password (min 6 karakter)" required style="width: 300px;">
+          </p>
+          <p>
+            <button type="submit" class="btn-primary">Buat Admin Sekolah</button>
+          </p>
+        </form>
+
+        <h4>System Logs</h4>
+        <p>
+          <button class="btn-secondary" id="btn-refresh-logs">Refresh Logs</button>
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Aksi</th>
+              <th>Deskripsi</th>
+              <th>User</th>
+            </tr>
+          </thead>
+          <tbody id="superadmin-logs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: TEST RESULT ================= -->
+    <div id="section-result" class="hidden">
+      <h2>✅ Hasil Tes Skrining</h2>
+      <button class="btn-secondary" id="btn-new-test">« Tes Baru</button>
+      <hr>
+      <h3>Informasi Sesi</h3>
+      <p>
+        <strong>ID Sesi:</strong> <span id="res-session-id">-</span><br>
+        <strong>Nama Siswa:</strong> <span id="res-name">-</span><br>
+        <strong>Jenjang:</strong> <span id="res-level">-</span><br>
+        <strong>Usia / Kelas:</strong> <span id="res-age-grade">-</span>
+      </p>
+      <h3>Hasil Scoring</h3>
+      <table>
+        <tr>
+          <th>Estimasi IQ</th>
+          <th>Grade</th>
+          <th>Total Benar</th>
+          <th>Total Salah</th>
+          <th>Persentase</th>
+        </tr>
+        <tr>
+          <td align="center"><b id="res-iq">-</b></td>
+          <td align="center" id="res-grade">-</td>
+          <td align="center" id="res-correct">-</td>
+          <td align="center" id="res-wrong">-</td>
+          <td align="center" id="res-pct">-</td>
+        </tr>
+      </table>
+      <p><strong>Deskripsi:</strong> <span id="res-desc">-</span></p>
+    </div>
+  </div>
+
+  <script src="src/appV2.js"></script>
+</body>
+
+</html>
