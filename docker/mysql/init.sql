@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) UNIQUE NOT NULL,
   `passwordHash` VARCHAR(255) NOT NULL,
   `role` ENUM('user', 'admin_sekolah', 'superadmin') DEFAULT 'user',
-  `schoolId` INT NULL,
+  `schoolId` INT NULL UNIQUE,
   `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_users_school` FOREIGN KEY (`schoolId`) REFERENCES `schools`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -143,6 +143,15 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
       });
     }
 
+    // Cek apakah sekolah sudah memiliki admin
+    const existingAdmin = await db.get("SELECT id FROM users WHERE schoolId = ?", [schoolId]);
+    if (existingAdmin) {
+      return res.status(400).json({
+        status: "error",
+        message: "Sekolah ini sudah memiliki akun admin. Satu sekolah hanya boleh memiliki maksimal 1 admin."
+      });
+    }
+
     // Cek apakah email sudah terdaftar
     const existing = await UserModel.findByEmail(email);
     if (existing) {

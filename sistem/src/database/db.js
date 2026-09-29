@@ -114,7 +114,7 @@ async function initDatabase() {
         email VARCHAR(255) UNIQUE NOT NULL,
         passwordHash VARCHAR(255) NOT NULL,
         role ENUM('user', 'admin_sekolah', 'superadmin') DEFAULT 'user',
-        schoolId INT NULL,
+        schoolId INT NULL UNIQUE,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
