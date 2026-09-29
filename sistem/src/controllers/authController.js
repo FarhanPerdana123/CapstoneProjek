@@ -1,9 +1,3 @@
-/**
- * Auth Controller
- * 
- * Mengelola alur pendaftaran (registrasi), autentikasi (login),
- * penerbitan JWT token, dan pengecekan profil user saat ini.
- */
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -13,11 +7,7 @@ const ApiResponse = require("../utils/apiResponse");
 const logger = require("../utils/logger");
 
 class AuthController {
-  /**
-   * POST /api/auth/register
-   * Mendaftarkan akun pengguna baru
-   */
-  static async register(req, res, next) {
+    static async register(req, res, next) {
     try {
       const { name, email, password, role = "user" } = req.body || {};
 
@@ -80,11 +70,7 @@ class AuthController {
     }
   }
 
-  /**
-   * POST /api/auth/login
-   * Autentikasi email & password, mengembalikan JWT token
-   */
-  static async login(req, res, next) {
+    static async login(req, res, next) {
     try {
       const { email, password } = req.body || {};
 
@@ -138,11 +124,7 @@ class AuthController {
     }
   }
 
-  /**
-   * GET /api/auth/me
-   * Mengambil informasi data profil user yang sedang login
-   */
-  static getProfile(req, res) {
+    static getProfile(req, res) {
     return ApiResponse.success(res, {
       message: "Profil user berhasil diambil.",
       data: req.user

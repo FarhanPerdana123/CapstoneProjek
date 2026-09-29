@@ -1,13 +1,3 @@
-/**
- * Scoring Service
- * 
- * Engine penilaian kognitif deterministik untuk jenjang SD & SMP.
- * Bertanggung jawab menghitung:
- * 1. Skor mentah, bobot, dan persentase keberhasilan per dimensi.
- * 2. Estimasi IQ berbasis skala Wechsler (konversi kurva normal terstandar).
- * 3. Indikator deteksi awal DSM-5 Kriteria A (Hambatan Fungsi Intelektual).
- * 4. Analisis kekuatan, area peningkatan, dan saran pedagogik adaptif.
- */
 
 const {
   LEVELS,
@@ -18,15 +8,7 @@ const {
 } = require("../config/constants");
 
 class ScoringService {
-  /**
-   * Mengevaluasi hasil pengerjaan tes skrining siswa
-   * @param {Array<Object>} submittedAnswers - Array jawaban siswa [{ questionId, studentAnswer }]
-   * @param {Object} studentInfo - Data identitas siswa
-   * @param {string} level - 'SD' atau 'SMP'
-   * @param {Array<Object>} bankSoal - Daftar soal lengkap beserta kunci jawaban dari database
-   * @returns {Object} Hasil evaluasi komprehensif
-   */
-  static evaluateTest(submittedAnswers = [], studentInfo = {}, level = LEVELS.SD, bankSoal = []) {
+    static evaluateTest(submittedAnswers = [], studentInfo = {}, level = LEVELS.SD, bankSoal = []) {
     const jenjang = String(level || studentInfo.level || LEVELS.SD).toUpperCase().trim();
     const jenjangValid = jenjang === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
 
@@ -180,12 +162,7 @@ class ScoringService {
     };
   }
 
-  /**
-   * Menentukan klasifikasi IQ berdasarkan standar Wechsler
-   * @param {number} iq 
-   * @returns {Object}
-   */
-  static getKlasifikasiIQ(iq) {
+    static getKlasifikasiIQ(iq) {
     for (const item of IQ_CLASSIFICATIONS) {
       if (iq >= item.min) {
         return {
@@ -206,13 +183,7 @@ class ScoringService {
     };
   }
 
-  /**
-   * Deteksi awal indikator hambatan kognitif mengacu pada kriteria DSM-5
-   * @param {number} iq 
-   * @param {string} level 
-   * @returns {Object}
-   */
-  static cekIndikatorDSM5(iq, level = LEVELS.SD) {
+    static cekIndikatorDSM5(iq, level = LEVELS.SD) {
     if (iq < 70) {
       return {
         status: DSM5_STATUS.INDIKASI_PERLU_ASESMEN_LANJUT,
@@ -256,15 +227,7 @@ class ScoringService {
     };
   }
 
-  /**
-   * Membuat rekomendasi pedagogik yang disesuaikan
-   * @param {string} kategoriIQ 
-   * @param {Array<string>} kekuatan 
-   * @param {Array<string>} kelemahan 
-   * @param {string} level 
-   * @returns {Array<string>}
-   */
-  static buatSaranBelajar(kategoriIQ, kekuatan, kelemahan, level) {
+    static buatSaranBelajar(kategoriIQ, kekuatan, kelemahan, level) {
     const saran = [];
 
     if (kategoriIQ.includes("Superior")) {

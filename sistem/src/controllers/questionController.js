@@ -1,14 +1,3 @@
-/**
- * Question Controller
- * 
- * Mengelola endpoint RESTful API untuk bank soal:
- * - Mengambil daftar soal & filter
- * - Generator otomatis kode soal berurutan (SD-LOG-01, SMP-NUM-02, dll)
- * - Detail soal by ID
- * - Tambah soal baru (Create) - Superadmin only
- * - Perbarui soal (Update) - Superadmin only
- * - Hapus soal (Delete) - Superadmin only
- */
 
 const QuestionModel = require("../models/questionModel");
 const SystemLogsService = require("../services/systemLogsService");
@@ -17,11 +6,7 @@ const logger = require("../utils/logger");
 const { LEVELS, DIFFICULTIES, COGNITIVE_CATEGORIES } = require("../config/constants");
 
 class QuestionController {
-  /**
-   * GET /api/questions
-   * Mengambil semua daftar soal dengan dukungan filter jenjang, dimensi, kesulitan, dan pencarian
-   */
-  static async getAll(req, res, next) {
+    static async getAll(req, res, next) {
     try {
       const { level, categoryKey, difficulty, search } = req.query;
       const questions = await QuestionModel.getAll({ level, categoryKey, difficulty, search });
@@ -36,11 +21,7 @@ class QuestionController {
     }
   }
 
-  /**
-   * GET /api/questions/generate-code?level=SD&categoryKey=LOGICAL
-   * Menghasilkan kode soal unik berikutnya secara deterministik
-   */
-  static async generateCode(req, res, next) {
+    static async generateCode(req, res, next) {
     try {
       const { level = LEVELS.SD, categoryKey = "LOGICAL" } = req.query;
       const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
@@ -60,11 +41,7 @@ class QuestionController {
     }
   }
 
-  /**
-   * GET /api/questions/:id
-   * Mengambil detail satu soal berdasarkan ID
-   */
-  static async getById(req, res, next) {
+    static async getById(req, res, next) {
     try {
       const { id } = req.params;
       const question = await QuestionModel.getById(id);
@@ -85,11 +62,7 @@ class QuestionController {
     }
   }
 
-  /**
-   * POST /api/questions
-   * Menyimpan soal baru ke dalam bank soal (Superadmin only)
-   */
-  static async create(req, res, next) {
+    static async create(req, res, next) {
     try {
       // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat menambah soal baru
       if (req.user && req.user.role !== "superadmin") {
@@ -112,16 +85,14 @@ class QuestionController {
         scoreWeight = 1
       } = req.body || {};
 
-      // 1. Validasi keberadaan input wajib
-      if (!questionCode || !level || !categoryKey || !category || !difficulty || !questionText || !options || !correctAnswer) {
+            if (!questionCode || !level || !categoryKey || !category || !difficulty || !questionText || !options || !correctAnswer) {
         return ApiResponse.error(res, {
           statusCode: 400,
           message: "Field wajib: questionCode, level (SD/SMP), categoryKey, category, difficulty (EASY/MEDIUM/HARD), questionText, options, correctAnswer."
         });
       }
 
-      // 2. Validasi Jenjang
-      const jenjang = level.toUpperCase().trim();
+            const jenjang = level.toUpperCase().trim();
       if (![LEVELS.SD, LEVELS.SMP].includes(jenjang)) {
         return ApiResponse.error(res, {
           statusCode: 400,
@@ -129,8 +100,7 @@ class QuestionController {
         });
       }
 
-      // 3. Validasi Tingkat Kesulitan
-      const tingkatKesulitan = difficulty.toUpperCase().trim();
+            const tingkatKesulitan = difficulty.toUpperCase().trim();
       if (!DIFFICULTIES.includes(tingkatKesulitan)) {
         return ApiResponse.error(res, {
           statusCode: 400,
@@ -138,16 +108,14 @@ class QuestionController {
         });
       }
 
-      // 4. Validasi Array Pilihan Jawaban
-      if (!Array.isArray(options) || options.length < 2) {
+            if (!Array.isArray(options) || options.length < 2) {
         return ApiResponse.error(res, {
           statusCode: 400,
           message: "Options harus berupa array pilihan jawaban dengan minimal 2 item pilihan."
         });
       }
 
-      // 5. Cek duplikasi questionCode
-      const existing = await QuestionModel.getByCode(questionCode.trim());
+            const existing = await QuestionModel.getByCode(questionCode.trim());
       if (existing) {
         return ApiResponse.error(res, {
           statusCode: 409,
@@ -190,11 +158,7 @@ class QuestionController {
     }
   }
 
-  /**
-   * PUT /api/questions/:id
-   * Memperbarui data soal yang sudah ada (Superadmin only)
-   */
-  static async update(req, res, next) {
+    static async update(req, res, next) {
     try {
       // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat mengubah soal
       if (req.user && req.user.role !== "superadmin") {
@@ -276,11 +240,7 @@ class QuestionController {
     }
   }
 
-  /**
-   * DELETE /api/questions/:id
-   * Menghapus soal dari database (Superadmin only)
-   */
-  static async delete(req, res, next) {
+    static async delete(req, res, next) {
     try {
       // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat menghapus soal
       if (req.user && req.user.role !== "superadmin") {

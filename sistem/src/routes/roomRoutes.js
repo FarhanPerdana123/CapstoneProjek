@@ -1,14 +1,3 @@
-/**
- * Routes untuk Test Rooms (Kahoot-like PIN System)
- * 
- * Admin Sekolah:
- *   POST /api/rooms/generate - Generate PIN baru
- *   GET  /api/rooms - List rooms milik sekolah
- *   POST /api/rooms/:id/close - Tutup room
- * 
- * Siswa (Public):
- *   POST /api/rooms/validate-pin - Validasi PIN dan ambil room details
- */
 
 const express = require("express");
 const { requireRole, requireOwnSchool } = require("../middlewares/rbacMiddleware");
@@ -18,17 +7,12 @@ const logger = require("../utils/logger");
 
 const router = express.Router();
 
-/**
- * POST /api/rooms/generate
- * Admin Sekolah: Generate PIN baru untuk sesi tes
- */
 router.post("/generate", requireRole("admin_sekolah"), requireOwnSchool, async (req, res) => {
   try {
     const { level } = req.body;
     const schoolId = req.user.schoolId;
 
-    // Validasi input
-    if (!level || !["SD", "SMP"].includes(level)) {
+        if (!level || !["SD", "SMP"].includes(level)) {
       return res.status(400).json({
         status: "error",
         message: "Level harus 'SD' atau 'SMP'"
@@ -52,8 +36,7 @@ router.post("/generate", requireRole("admin_sekolah"), requireOwnSchool, async (
       });
     }
 
-    // Buat room baru
-    const newRoom = await TestRoomModel.create({
+        const newRoom = await TestRoomModel.create({
       schoolId,
       pinCode,
       level
@@ -81,10 +64,6 @@ router.post("/generate", requireRole("admin_sekolah"), requireOwnSchool, async (
   }
 });
 
-/**
- * GET /api/rooms
- * Admin Sekolah: List semua test rooms milik sekolah mereka
- */
 router.get("/", requireRole("admin_sekolah"), requireOwnSchool, async (req, res) => {
   try {
     const schoolId = req.user.schoolId;
@@ -103,11 +82,6 @@ router.get("/", requireRole("admin_sekolah"), requireOwnSchool, async (req, res)
   }
 });
 
-/**
- * POST /api/rooms/validate-pin
- * Public: Siswa validasi PIN dan ambil room details
- * Respon: { roomId, level, schoolId } atau error jika PIN invalid/closed
- */
 router.post("/validate-pin", async (req, res) => {
   try {
     const { pinCode } = req.body;
@@ -135,8 +109,7 @@ router.post("/validate-pin", async (req, res) => {
       });
     }
 
-    // Return room details untuk siswa (tanpa schoolId, hanya yang perlu)
-    res.json({
+        res.json({
       status: "success",
       data: {
         roomId: room.id,
@@ -154,10 +127,6 @@ router.post("/validate-pin", async (req, res) => {
   }
 });
 
-/**
- * POST /api/rooms/:id/close
- * Admin Sekolah: Tutup test room
- */
 router.post("/:id/close", requireRole("admin_sekolah"), requireOwnSchool, async (req, res) => {
   try {
     const { id } = req.params;

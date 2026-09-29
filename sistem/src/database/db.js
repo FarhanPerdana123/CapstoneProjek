@@ -1,10 +1,3 @@
-/**
- * Database Layer (MySQL)
- * 
- * Mengelola koneksi database MySQL (Docker),
- * inisialisasi skema tabel & indeks secara otomatis,
- * serta menyediakan antarmuka Promise yang seragam untuk query DML & DQL.
- */
 
 const path = require("path");
 const fs = require("fs");
@@ -19,13 +12,7 @@ const pool = mysql.createPool(config.db.mysql);
 
 // Wrapper Promise untuk MySQL dengan format seragam
 const db = {
-  /**
-   * Menjalankan query DML (INSERT, UPDATE, DELETE)
-   * @param {string} sql
-   * @param {Array} params
-   * @returns {Promise<{lastID: number, insertId: number, changes: number, affectedRows: number}>}
-   */
-  async run(sql, params = []) {
+    async run(sql, params = []) {
     const normalizedParams = params.map(p => (p === undefined ? null : p));
     const [result] = await pool.query(sql, normalizedParams);
     return {
@@ -36,45 +23,25 @@ const db = {
     };
   },
 
-  /**
-   * Mengambil 1 baris hasil query (SELECT single)
-   * @param {string} sql
-   * @param {Array} params
-   * @returns {Promise<any>}
-   */
-  async get(sql, params = []) {
+    async get(sql, params = []) {
     const normalizedParams = params.map(p => (p === undefined ? null : p));
     const [rows] = await pool.query(sql, normalizedParams);
     return rows && rows.length > 0 ? rows[0] : null;
   },
 
-  /**
-   * Mengambil semua baris hasil query (SELECT multi)
-   * @param {string} sql
-   * @param {Array} params
-   * @returns {Promise<Array<any>>}
-   */
-  async all(sql, params = []) {
+    async all(sql, params = []) {
     const normalizedParams = params.map(p => (p === undefined ? null : p));
     const [rows] = await pool.query(sql, normalizedParams);
     return rows || [];
   },
 
-  /**
-   * Menjalankan statement SQL mentah
-   * @param {string} sql
-   * @returns {Promise<void>}
-   */
-  async exec(sql) {
+    async exec(sql) {
     await pool.query(sql);
   }
 };
 
 const rawDb = pool;
 
-/**
- * Inisialisasi skema tabel & indeks database
- */
 async function initDatabase() {
   // Retry loop saat MySQL container baru booting
   let retries = 12;
@@ -96,8 +63,7 @@ async function initDatabase() {
   }
 
   try {
-    // 1. Schools
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS schools (
         id INT AUTO_INCREMENT PRIMARY KEY,
         schoolName VARCHAR(255) NOT NULL,
@@ -106,8 +72,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 2. Users
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -119,8 +84,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 3. Questions
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         questionCode VARCHAR(64) UNIQUE NOT NULL,
@@ -138,8 +102,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 4. Test Rooms
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS test_rooms (
         id INT AUTO_INCREMENT PRIMARY KEY,
         schoolId INT NOT NULL,
@@ -150,8 +113,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 5. Screening Sessions
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS screening_sessions (
         sessionId INT AUTO_INCREMENT PRIMARY KEY,
         userId INT NULL,
@@ -169,8 +131,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 6. System Settings
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS system_settings (
         \`key\` VARCHAR(100) PRIMARY KEY,
         value TEXT NOT NULL,
@@ -178,8 +139,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 7. System Logs
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS system_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         action VARCHAR(100) NOT NULL,

@@ -1,15 +1,3 @@
-/**
- * Database Migrations untuk Multi-School, Role-Based, dan Session-PIN System
- * 
- * Mendukung driver MySQL (Docker).
- * Migration ini memastikan skema berikut tersedia:
- * - schools: Master data sekolah
- * - test_rooms: Kode sesi dengan PIN (Kahoot-like system)
- * - system_settings: Global settings (minimum score)
- * - system_logs: Audit trail untuk perubahan sistem
- * - Kolom schoolId pada users
- * - Kolom roomId pada screening_sessions
- */
 
 const { db, client } = require("./db");
 const logger = require("../utils/logger");
@@ -18,8 +6,7 @@ async function runMigrations() {
   try {
     logger.info(`Memulai migrasi database (MYSQL)...`);
 
-    // 1. Tambah kolom schoolId ke tabel users (jika belum ada)
-    try {
+        try {
       await db.exec("ALTER TABLE users ADD COLUMN schoolId INT NULL;");
       logger.info("✓ Kolom schoolId ditambahkan ke tabel users");
     } catch (e) {
@@ -33,8 +20,7 @@ async function runMigrations() {
       }
     }
 
-    // 2. Buat tabel schools
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS schools (
         id INT AUTO_INCREMENT PRIMARY KEY,
         schoolName VARCHAR(255) NOT NULL,
@@ -44,8 +30,7 @@ async function runMigrations() {
     `);
     logger.info("✓ Tabel schools dibuat/sudah ada");
 
-    // 3. Buat tabel test_rooms (untuk Kahoot-like PIN system)
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS test_rooms (
         id INT AUTO_INCREMENT PRIMARY KEY,
         schoolId INT NOT NULL,
@@ -60,8 +45,7 @@ async function runMigrations() {
     `);
     logger.info("✓ Tabel test_rooms dibuat/sudah ada");
 
-    // 4. Buat tabel system_settings
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS system_settings (
         \`key\` VARCHAR(100) PRIMARY KEY,
         value TEXT NOT NULL,
@@ -70,8 +54,7 @@ async function runMigrations() {
     `);
     logger.info("✓ Tabel system_settings dibuat/sudah ada");
 
-    // 5. Buat tabel system_logs (untuk audit trail)
-    await db.exec(`
+        await db.exec(`
       CREATE TABLE IF NOT EXISTS system_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         action VARCHAR(100) NOT NULL,
@@ -85,8 +68,7 @@ async function runMigrations() {
     `);
     logger.info("✓ Tabel system_logs dibuat/sudah ada");
 
-    // 6. Tambah kolom roomId ke screening_sessions (jika belum ada)
-    try {
+        try {
       await db.exec("ALTER TABLE screening_sessions ADD COLUMN roomId INT NULL;");
       logger.info("✓ Kolom roomId ditambahkan ke screening_sessions");
     } catch (e) {
@@ -100,8 +82,7 @@ async function runMigrations() {
       }
     }
 
-    // 8. Inisialisasi default minimum_score setting
-    const existingMinScore = await db.get(
+        const existingMinScore = await db.get(
       "SELECT value FROM system_settings WHERE `key` = 'minimum_score'"
     );
     if (!existingMinScore) {

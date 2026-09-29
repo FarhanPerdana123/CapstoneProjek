@@ -1,8 +1,3 @@
-/**
- * Konfigurasi Utama Aplikasi
- * 
- * Memusatkan seluruh variabel lingkungan, path, dan opsi server.
- */
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const constants = require("./constants");

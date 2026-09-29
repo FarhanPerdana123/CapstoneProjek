@@ -1,16 +1,6 @@
-/**
- * Role-Based Access Control (RBAC) Middleware
- * 
- * Validasi role pengguna sebelum akses endpoint tertentu.
- */
 
 const logger = require("../utils/logger");
 
-/**
- * Middleware untuk verifikasi role
- * @param  {...string} allowedRoles - Role yang diizinkan
- * @returns {Function} Express middleware
- */
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     // Asumsikan req.user sudah di-set oleh middleware auth sebelumnya
@@ -33,9 +23,6 @@ function requireRole(...allowedRoles) {
   };
 }
 
-/**
- * Middleware untuk memastikan admin_sekolah hanya akses data milik sekolah mereka
- */
 function requireOwnSchool(req, res, next) {
   if (!req.user) {
     return res.status(401).json({

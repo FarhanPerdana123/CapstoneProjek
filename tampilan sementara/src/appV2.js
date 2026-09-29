@@ -34,7 +34,6 @@ const state = {
   timerInterval: null
 };
 
-/* ========== INIT ========== */
 document.addEventListener("DOMContentLoaded", async () => {
   await checkActiveSession();
   initEventListeners();
@@ -62,7 +61,6 @@ function initEventListeners() {
   document.getElementById("btn-refresh-logs").addEventListener("click", loadSystemLogs);
 }
 
-/* ========== AUTH ========== */
 async function checkActiveSession() {
   if (!state.token) {
     updateAuthUI(null);
@@ -142,7 +140,6 @@ function handleLogout() {
   showDefaultView();
 }
 
-/* ========== DEFAULT VIEW ========== */
 function showDefaultView() {
   hideAllSections();
   if (!state.currentUser) {
@@ -193,7 +190,6 @@ function showAdminTab(tabName) {
   if (tabName === "results") loadAdminResults();
 }
 
-/* ========== STUDENT PIN ENTRY ========== */
 async function handlePinEntry(e) {
   e.preventDefault();
   const pinCode = document.getElementById("input-pin").value.toUpperCase();
@@ -405,7 +401,6 @@ document.getElementById("btn-new-test")?.addEventListener("click", () => {
   document.getElementById("section-student-pin").classList.remove("hidden");
 });
 
-/* ========== ADMIN: ROOMS ========== */
 async function handleGenerateRoom() {
   const level = document.getElementById("admin-room-level").value;
 
@@ -477,7 +472,6 @@ async function closeRoom(roomId) {
   }
 }
 
-/* ========== ADMIN: RESULTS ========== */
 async function loadAdminResults() {
   try {
     const res = await fetch(`${API_SCREENINGS}/results`, {
@@ -504,7 +498,6 @@ async function loadAdminResults() {
   }
 }
 
-/* ========== SUPERADMIN ========== */
 async function handleUpdateMinScore() {
   const score = document.getElementById("superadmin-min-score").value;
 

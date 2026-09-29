@@ -10,10 +10,6 @@
  * 6. Manajemen Bank Soal (CRUD & Generator Kode Soal Otomatis)
  */
 
-/* ==========================================================================
-   1. KONFIGURASI API & STATE GLOBAL
-   ========================================================================== */
-
 // Base URL otomatis menyesuaikan host browser atau fallback ke localhost:5000
 const BASE_ORIGIN = (typeof window !== "undefined" && window.location.origin.startsWith("http"))
   ? window.location.origin
@@ -57,10 +53,6 @@ const categoryPrefixMap = {
   SPATIAL: "SPA"
 };
 
-/* ==========================================================================
-   2. DOM ELEMENT & NAVIGASI SEKSI
-   ========================================================================== */
-
 const sections = {
   form: document.getElementById("section-form"),
   test: document.getElementById("section-test"),
@@ -95,10 +87,6 @@ function getAuthHeaders() {
   return headers;
 }
 
-/* ==========================================================================
-   3. INISIALISASI EVENT LISTENERS UTAMA
-   ========================================================================== */
-
 document.addEventListener("DOMContentLoaded", async () => {
   initNavigation();
   initAuthEventListeners();
@@ -115,10 +103,6 @@ function initNavigation() {
     loadQuestionsTable();
   });
 }
-
-/* ==========================================================================
-   4. MODUL AUTENTIKASI PENGGUNA (LOGIN, REGISTER, LOGOUT)
-   ========================================================================== */
 
 function initAuthEventListeners() {
   document.getElementById("btn-show-login").addEventListener("click", () => showAuthBox("login"));
@@ -240,10 +224,6 @@ function handleLogout(showAlert = true) {
   if (showAlert) alert("Anda telah logout dari sistem.");
   showSection("form");
 }
-
-/* ==========================================================================
-   5. MODUL PENGERJAAN TES SKRINING (FORM, PALET, TIMER, JAWABAN)
-   ========================================================================== */
 
 function initTestEventListeners() {
   document.getElementById("form-student").addEventListener("submit", handleStart);
@@ -468,10 +448,6 @@ async function handleSubmitTest() {
   }
 }
 
-/* ==========================================================================
-   6. MODUL HASIL DIAGNOSTIK & INDIKATOR DSM-5
-   ========================================================================== */
-
 function renderResult(result) {
   const { student, summary, cognitiveScore, dsm5Screening, categoryBreakdown, analysis, detailedItems } = result;
 
@@ -570,10 +546,6 @@ function resetApp() {
   showSection("form");
 }
 
-/* ==========================================================================
-   7. MODUL RIWAYAT SESI PENGGUNA
-   ========================================================================== */
-
 async function handleViewHistory() {
   if (!state.token) {
     alert("Anda wajib Login terlebih dahulu untuk melihat riwayat sesi tes tersimpan.");
@@ -636,10 +608,6 @@ async function loadSessionResult(sessionId) {
     alert("Error memuat detail sesi: " + err.message);
   }
 }
-
-/* ==========================================================================
-   8. MODUL MANAJEMEN BANK SOAL (CRUD SQLITE & GENERATOR KODE OTOMATIS)
-   ========================================================================== */
 
 /**
  * Generate kode soal otomatis (SD-LOG-xx, SMP-NUM-xx)
@@ -876,10 +844,6 @@ async function handleDeleteQuestion(id, code) {
     alert("Error Hapus Soal: " + err.message);
   }
 }
-
-/* ==========================================================================
-   9. UTILITY FUNCTIONS (DEBOUNCE, ESCAPE HTML)
-   ========================================================================== */
 
 function debounce(func, wait) {
   let timeout;

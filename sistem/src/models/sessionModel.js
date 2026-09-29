@@ -1,20 +1,9 @@
-/**
- * Session Model
- * 
- * Mengelola riwayat sesi skrining kognitif pada tabel 'screening_sessions'.
- * Menyimpan identitas siswa, status pengerjaan, jawaban, dan hasil scoring deterministik.
- */
 
 const { db } = require("../database/db");
 const { LEVELS } = require("../config/constants");
 
 class SessionModel {
-  /**
-   * Format baris data SQLite menjadi objek sesi terstruktur
-   * @param {Object} row 
-   * @returns {Object|null}
-   */
-  static formatRow(row) {
+    static formatRow(row) {
     if (!row) return null;
     let answers = [];
     let result = null;
@@ -50,23 +39,13 @@ class SessionModel {
     };
   }
 
-  /**
-   * Mencari sesi berdasarkan sessionId unik
-   * @param {string} sessionId 
-   * @returns {Promise<Object|null>}
-   */
-  static async findById(sessionId) {
+    static async findById(sessionId) {
     if (!sessionId) return null;
     const row = await db.get("SELECT * FROM screening_sessions WHERE sessionId = ?", [sessionId]);
     return this.formatRow(row);
   }
 
-  /**
-   * Menyimpan atau memperbarui data sesi skrining
-   * @param {Object} session 
-   * @returns {Promise<Object|null>}
-   */
-  static async save(session) {
+    static async save(session) {
     const existing = session.sessionId ? await db.get("SELECT sessionId FROM screening_sessions WHERE sessionId = ?", [session.sessionId]) : null;
     const answersJson = JSON.stringify(session.answers || []);
     const resultJson = session.result ? JSON.stringify(session.result) : null;
@@ -117,12 +96,7 @@ class SessionModel {
     return this.findById(session.sessionId);
   }
 
-  /**
-   * Mengambil semua riwayat sesi selesai berdasarkan userId
-   * @param {string} userId 
-   * @returns {Promise<Array<Object>>}
-   */
-  static async findByUserId(userId) {
+    static async findByUserId(userId) {
     if (!userId) return [];
     const rows = await db.all(
       "SELECT * FROM screening_sessions WHERE userId = ? AND status = 'COMPLETED' ORDER BY completedAt DESC",

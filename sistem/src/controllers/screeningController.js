@@ -1,13 +1,3 @@
-/**
- * Screening Controller
- * 
- * Mengelola alur pelaksanaan tes skrining kognitif:
- * 1. Mengambil lembar soal terproteksi (kunci jawaban & pembahasan disaring)
- * 2. Memulai sesi pengerjaan tes baru (start session)
- * 3. Mengirimkan jawaban tes dan melakukan scoring otomatis (submit session)
- * 4. Mengambil detail hasil tes spesifik (get result)
- * 5. Mengambil riwayat seluruh sesi yang pernah dikerjakan pengguna (history)
- */
 
 const QuestionModel = require("../models/questionModel");
 const SessionModel = require("../models/sessionModel");
@@ -18,10 +8,6 @@ const config = require("../config");
 const { LEVELS, LEVEL_LABELS } = require("../config/constants");
 
 class ScreeningController {
-  /**
-   * GET /api/screenings/questions?level=SD
-   * Mengambil soal untuk dikerjakan siswa (kunci jawaban disembunyikan demi integritas tes)
-   */
   static async getQuestions(req, res, next) {
     try {
       const jenjangParam = (req.query.level || LEVELS.SD).toUpperCase().trim();
@@ -36,7 +22,6 @@ class ScreeningController {
         });
       }
 
-      // Saring agar kunci jawaban dan pembahasan tidak bocor ke client browser
       const soalTersaring = bankSoal.map((q) => ({
         id: q.id,
         questionCode: q.questionCode,
@@ -60,10 +45,6 @@ class ScreeningController {
     }
   }
 
-  /**
-   * POST /api/screenings/start
-   * Membuka sesi pengerjaan baru untuk peserta
-   */
   static async startSession(req, res, next) {
     try {
       const { name, age, grade, school, level = LEVELS.SD } = req.body || {};
@@ -123,11 +104,6 @@ class ScreeningController {
     }
   }
 
-  /**
-   * POST /api/screenings/:sessionId/submit atau /api/screenings/submit
-   * Mengirim jawaban dan menghitung skor deterministik
-   * Sekarang support roomId untuk PIN-based system
-   */
   static async submitScreening(req, res, next) {
     try {
       const { sessionId } = req.params;
@@ -182,10 +158,6 @@ class ScreeningController {
     }
   }
 
-  /**
-   * GET /api/screenings/:sessionId/result
-   * Mengambil hasil pengerjaan tes dengan pengecekan hak akses privasi
-   */
   static async getResult(req, res, next) {
     try {
       const { sessionId } = req.params;
@@ -219,10 +191,6 @@ class ScreeningController {
     }
   }
 
-  /**
-   * GET /api/screenings/history
-   * Mengambil riwayat tes pengguna yang sedang login
-   */
   static async getAllSessions(req, res, next) {
     try {
       const currentUserId = req.user ? req.user.id : null;
@@ -268,10 +236,6 @@ class ScreeningController {
     }
   }
 
-  /**
-   * GET /api/screenings/results
-   * Admin Sekolah: Ambil hasil tes untuk sekolah mereka (grouped by roomId)
-   */
   static async getResults(req, res, next) {
     try {
       if (!req.user || req.user.role !== "admin_sekolah") {
@@ -292,7 +256,6 @@ class ScreeningController {
         [req.user.schoolId]
       );
 
-      // Format results
       const formattedResults = results.map(r => ({
         sessionId: r.sessionId,
         roomId: r.roomId,

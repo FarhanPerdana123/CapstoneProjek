@@ -1,16 +1,5 @@
-/**
- * Custom Application Error Class
- * 
- * Digunakan untuk membedakan kesalahan operasional yang diharapkan
- * (seperti validasi gagal, 404, 401) dari bug sistem tak terduga (500).
- */
 class AppError extends Error {
-  /**
-   * @param {string} message Pesan error ramah pengguna
-   * @param {number} statusCode HTTP Status code (misal: 400, 401, 403, 404, 409, 500)
-   * @param {any} details Detail teknis tambahan / field error
-   */
-  constructor(message, statusCode = 500, details = null) {
+    constructor(message, statusCode = 500, details = null) {
     super(message);
     this.name = "AppError";
     this.statusCode = statusCode;

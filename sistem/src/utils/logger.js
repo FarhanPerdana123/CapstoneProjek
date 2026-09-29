@@ -1,9 +1,3 @@
-/**
- * Logger Utility
- * 
- * Mempermudah pelacakan aktivitas server, debugging request,
- * dan identifikasi error secara cepat dan terstruktur.
- */
 
 const colors = {
   reset: "\x1b[0m",

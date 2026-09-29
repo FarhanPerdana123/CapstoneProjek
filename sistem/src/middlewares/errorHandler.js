@@ -1,9 +1,3 @@
-/**
- * Centralized Error Handler Middleware
- * 
- * Menangkap semua error yang tidak tertangani atau dilempar melalui next(err).
- * Memberikan pesan error yang jelas dan log stack trace untuk kemudahan debugging.
- */
 const logger = require("../utils/logger");
 const config = require("../config");
 

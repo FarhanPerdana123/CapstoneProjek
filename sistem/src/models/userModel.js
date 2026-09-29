@@ -1,42 +1,21 @@
-/**
- * User Model
- * 
- * Mengelola data pengguna, guru, atau konselor pada tabel 'users'.
- * Sekarang mendukung role-based: 'superadmin', 'admin_sekolah'.
- */
 
 const { db } = require("../database/db");
 
 class UserModel {
-  /**
-   * Mencari user berdasarkan alamat email
-   * @param {string} email 
-   * @returns {Promise<Object|null>}
-   */
-  static async findByEmail(email) {
+    static async findByEmail(email) {
     if (!email) return null;
     const cleanEmail = email.trim().toLowerCase();
     const row = await db.get("SELECT * FROM users WHERE email = ?", [cleanEmail]);
     return row || null;
   }
 
-  /**
-   * Mencari user berdasarkan ID
-   * @param {string} id 
-   * @returns {Promise<Object|null>}
-   */
-  static async findById(id) {
+    static async findById(id) {
     if (!id) return null;
     const row = await db.get("SELECT * FROM users WHERE id = ?", [id]);
     return row || null;
   }
 
-  /**
-   * Mendapatkan semua admin_sekolah untuk sekolah tertentu
-   * @param {string} schoolId 
-   * @returns {Promise<Array>}
-   */
-  static async findBySchoolId(schoolId) {
+    static async findBySchoolId(schoolId) {
     if (!schoolId) return [];
     return await db.all(
       "SELECT * FROM users WHERE schoolId = ? AND role = 'admin_sekolah' ORDER BY name ASC",
@@ -44,26 +23,11 @@ class UserModel {
     );
   }
 
-  /**
-   * Mendapatkan semua superadmin
-   * @returns {Promise<Array>}
-   */
-  static async findAllSuperadmins() {
+    static async findAllSuperadmins() {
     return await db.all("SELECT * FROM users WHERE role = 'superadmin' ORDER BY name ASC");
   }
 
-  /**
-   * Membuat user baru di database
-   * @param {Object} userData 
-   * @param {string} userData.id
-   * @param {string} userData.name
-   * @param {string} userData.email
-   * @param {string} userData.passwordHash
-   * @param {string} userData.role - 'superadmin' atau 'admin_sekolah'
-   * @param {string} [userData.schoolId] - Required jika role='admin_sekolah'
-   * @returns {Promise<Object|null>}
-   */
-  static async create(userData) {
+    static async create(userData) {
     const { name, email, passwordHash, role = "admin_sekolah", schoolId = null } = userData;
     const cleanEmail = email.trim().toLowerCase();
 
@@ -86,10 +50,7 @@ class UserModel {
     return this.findById(result.insertId);
   }
 
-  /**
-   * Update user (terutama role dan schoolId)
-   */
-  static async update(id, updates) {
+    static async update(id, updates) {
     const { name, role, schoolId } = updates;
     const fields = [];
     const values = [];

@@ -1,9 +1,3 @@
-/**
- * Server Utama Sistem Skrining Kognitif Awal Siswa (SD & SMP)
- * 
- * Mengintegrasikan Express, middleware keamanan CORS, parsing JSON,
- * request logging, rute API terorganisir, serta penanganan error terpusat.
- */
 
 const express = require("express");
 const cors = require("cors");
@@ -24,13 +18,11 @@ const settingsRoutes = require("./routes/settingsRoutes");
 
 const app = express();
 
-// 1. Middlewares Inti
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// 2. Rute API
 app.use("/api/auth", authRoutes);
 app.use("/api/screenings", screeningRoutes);
 app.use("/api/questions", questionRoutes);
@@ -46,14 +38,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 3. Penyajian File Statis Frontend
 const staticPath = fs.existsSync(config.paths.staticTampilan)
   ? config.paths.staticTampilan
   : config.paths.staticFrontend;
 
 app.use(express.static(staticPath));
 
-// 4. Rute Halaman Khusus Admin
 app.get("/admin", (req, res, next) => {
   const adminPath = path.join(staticPath, "admin.html");
   if (fs.existsSync(adminPath)) {
@@ -76,11 +66,9 @@ app.get("*", (req, res, next) => {
   }
 });
 
-// 4. Error Handling Middlewares Terpusat
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
-// 5. Menjalankan Server
 const server = app.listen(config.port, () => {
   logger.success(`=================================================`);
   logger.success(`Sistem Skrining Kognitif Server Aktif!`);

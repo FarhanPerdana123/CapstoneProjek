@@ -1,9 +1,3 @@
-/**
- * Sistem Skrining Kognitif - Konstanta & Definisi Sistem
- * 
- * File ini merupakan Single Source of Truth untuk seluruh enum,
- * pemetaan kategori dimensi kognitif, klasifikasi IQ, dan indikator DSM-5.
- */
 
 // Jenjang pendidikan yang didukung
 const LEVELS = {

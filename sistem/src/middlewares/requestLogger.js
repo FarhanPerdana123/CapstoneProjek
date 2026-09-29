@@ -1,9 +1,3 @@
-/**
- * HTTP Request Logger Middleware
- * 
- * Mencatat setiap request yang masuk beserta waktu eksekusi dan kode status HTTP.
- * Membantu developer berikutnya melacak alur API dan mempermudah investigasi request yang gagal.
- */
 const logger = require("../utils/logger");
 
 function requestLogger(req, res, next) {

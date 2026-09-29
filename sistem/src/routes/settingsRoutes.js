@@ -1,13 +1,3 @@
-/**
- * Routes untuk System Settings & Admin Management
- * 
- * Superadmin only:
- *   POST /api/settings/min-score - Update minimum score global
- *   GET  /api/settings/min-score - Get current minimum score
- *   GET  /api/logs - Ambil system logs
- *   POST /api/admin/create - Create admin_sekolah account
- *   GET  /api/admin/list - List semua admin accounts
- */
 
 const express = require("express");
 const crypto = require("crypto");
@@ -21,16 +11,11 @@ const logger = require("../utils/logger");
 
 const router = express.Router();
 
-/**
- * POST /api/settings/min-score
- * Superadmin: Update global minimum score
- */
 router.post("/min-score", requireRole("superadmin"), async (req, res) => {
   try {
     const { minimumScore } = req.body;
 
-    // Validasi input
-    if (minimumScore === undefined || minimumScore === null) {
+        if (minimumScore === undefined || minimumScore === null) {
       return res.status(400).json({
         status: "error",
         message: "minimumScore harus diisi"
@@ -64,8 +49,7 @@ router.post("/min-score", requireRole("superadmin"), async (req, res) => {
       );
     }
 
-    // Log aksi
-    await SystemLogsService.logAction(
+        await SystemLogsService.logAction(
       "UPDATE_MIN_SCORE",
       `Skor minimum diubah menjadi ${score}`,
       req.user.id
@@ -91,10 +75,6 @@ router.post("/min-score", requireRole("superadmin"), async (req, res) => {
   }
 });
 
-/**
- * GET /api/settings/min-score
- * Public: Get current minimum score
- */
 router.get("/min-score", async (req, res) => {
   try {
     const setting = await db.get(
@@ -118,24 +98,18 @@ router.get("/min-score", async (req, res) => {
   }
 });
 
-/**
- * POST /api/admin/create
- * Superadmin: Buat akun admin_sekolah untuk sekolah tertentu
- */
 router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
   try {
     const { name, email, password, schoolId } = req.body;
 
-    // Validasi input
-    if (!name || !email || !password || !schoolId) {
+        if (!name || !email || !password || !schoolId) {
       return res.status(400).json({
         status: "error",
         message: "name, email, password, dan schoolId harus diisi"
       });
     }
 
-    // Cek apakah sekolah ada
-    const school = await SchoolModel.findById(schoolId);
+        const school = await SchoolModel.findById(schoolId);
     if (!school) {
       return res.status(404).json({
         status: "error",
@@ -143,8 +117,7 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
       });
     }
 
-    // Cek apakah sekolah sudah memiliki admin
-    const existingAdmin = await db.get("SELECT id FROM users WHERE schoolId = ?", [schoolId]);
+        const existingAdmin = await db.get("SELECT id FROM users WHERE schoolId = ?", [schoolId]);
     if (existingAdmin) {
       return res.status(400).json({
         status: "error",
@@ -152,8 +125,7 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
       });
     }
 
-    // Cek apakah email sudah terdaftar
-    const existing = await UserModel.findByEmail(email);
+        const existing = await UserModel.findByEmail(email);
     if (existing) {
       return res.status(400).json({
         status: "error",
@@ -161,8 +133,7 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
       });
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+        const passwordHash = await bcrypt.hash(password, 10);
 
     // Buat user dengan role admin_sekolah
     const newUser = await UserModel.create({
@@ -173,8 +144,7 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
       schoolId
     });
 
-    // Log aksi
-    await SystemLogsService.logAction(
+        await SystemLogsService.logAction(
       "CREATE_ADMIN_SEKOLAH",
       `Admin sekolah dibuat: ${email} untuk sekolah ${school.schoolName}`,
       req.user.id
@@ -202,10 +172,6 @@ router.post("/admin/create", requireRole("superadmin"), async (req, res) => {
   }
 });
 
-/**
- * GET /api/admin/list
- * Superadmin: List semua admin accounts
- */
 router.get("/admin/list", requireRole("superadmin"), async (req, res) => {
   try {
     const admins = await db.all(
@@ -228,10 +194,6 @@ router.get("/admin/list", requireRole("superadmin"), async (req, res) => {
   }
 });
 
-/**
- * GET /api/logs
- * Superadmin: Get system logs
- */
 router.get("/logs", requireRole("superadmin"), async (req, res) => {
   try {
     const { action, limit = 100 } = req.query;

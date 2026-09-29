@@ -1,11 +1,3 @@
-/**
- * Authentication Middleware
- * 
- * Memverifikasi validitas token JWT pada header 'Authorization: Bearer <token>'.
- * Menyediakan dua middleware:
- * 1. requireAuth: Mewajibkan pengguna untuk login (menolak 401 jika tidak ada/tidak valid).
- * 2. optionalAuth: Membaca token jika ada, tetapi tetap melanjutkan sebagai guest jika tidak ada token.
- */
 
 const jwt = require("jsonwebtoken");
 const config = require("../config");

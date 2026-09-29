@@ -1,16 +1,6 @@
-/**
- * API Response Formatter Utility
- * 
- * Memastikan seluruh respons JSON memiliki struktur yang konsisten:
- * Success: { success: true, message, data, ...meta }
- * Error:   { success: false, message, error, details }
- */
 
 class ApiResponse {
-  /**
-   * Mengirim respons sukses standar
-   */
-  static success(res, { data = null, message = "Sukses", statusCode = 200, meta = {} } = {}) {
+    static success(res, { data = null, message = "Sukses", statusCode = 200, meta = {} } = {}) {
     const payload = {
       success: true,
       message,
@@ -24,10 +14,7 @@ class ApiResponse {
     return res.status(statusCode).json(payload);
   }
 
-  /**
-   * Mengirim respons error standar
-   */
-  static error(res, { message = "Terjadi kesalahan", statusCode = 500, error = null, details = null } = {}) {
+    static error(res, { message = "Terjadi kesalahan", statusCode = 500, error = null, details = null } = {}) {
     const payload = {
       success: false,
       message

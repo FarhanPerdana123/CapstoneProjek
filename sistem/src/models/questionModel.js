@@ -1,20 +1,9 @@
-/**
- * Question Model
- * 
- * Mengelola interaksi query tabel 'questions' pada SQLite.
- * Menyediakan operasi CRUD, filter level/kategori/kesulitan, dan generator kode soal otomatis.
- */
 
 const { db } = require("../database/db");
 const { COGNITIVE_CATEGORIES, LEVELS } = require("../config/constants");
 
 class QuestionModel {
-  /**
-   * Format baris data mentah dari SQLite ke objek soal yang bersih
-   * @param {Object} row 
-   * @returns {Object|null}
-   */
-  static formatRow(row) {
+    static formatRow(row) {
     if (!row) return null;
     let parsedOptions = [];
     try {
@@ -40,16 +29,7 @@ class QuestionModel {
     };
   }
 
-  /**
-   * Mengambil daftar soal dengan opsi filtering
-   * @param {Object} filters
-   * @param {string} [filters.level] - 'SD' atau 'SMP'
-   * @param {string} [filters.categoryKey] - 'LOGICAL', 'NUMERICAL', dll
-   * @param {string} [filters.difficulty] - 'EASY', 'MEDIUM', 'HARD'
-   * @param {string} [filters.search] - Kata kunci pencarian
-   * @returns {Promise<Array<Object>>}
-   */
-  static async getAll(filters = {}) {
+    static async getAll(filters = {}) {
     let query = "SELECT * FROM questions WHERE 1=1";
     const params = [];
 
@@ -80,33 +60,18 @@ class QuestionModel {
     return rows.map(this.formatRow);
   }
 
-  /**
-   * Mengambil 1 soal berdasarkan ID numerik
-   * @param {number|string} id 
-   * @returns {Promise<Object|null>}
-   */
-  static async getById(id) {
+    static async getById(id) {
     const row = await db.get("SELECT * FROM questions WHERE id = ?", [id]);
     return this.formatRow(row);
   }
 
-  /**
-   * Mengambil 1 soal berdasarkan Kode Soal unik
-   * @param {string} questionCode 
-   * @returns {Promise<Object|null>}
-   */
-  static async getByCode(questionCode) {
+    static async getByCode(questionCode) {
     if (!questionCode) return null;
     const row = await db.get("SELECT * FROM questions WHERE questionCode = ?", [questionCode.trim()]);
     return this.formatRow(row);
   }
 
-  /**
-   * Mendapatkan singkatan prefix kode dimensi kognitif (misal: LOG, NUM, VRB, SPA)
-   * @param {string} categoryKey 
-   * @returns {string}
-   */
-  static getCategoryCodePrefix(categoryKey) {
+    static getCategoryCodePrefix(categoryKey) {
     const key = (categoryKey || "").toUpperCase().trim();
     if (COGNITIVE_CATEGORIES[key]) {
       return COGNITIVE_CATEGORIES[key].prefix;
@@ -114,14 +79,7 @@ class QuestionModel {
     return key.length >= 3 ? key.slice(0, 3) : "GEN";
   }
 
-  /**
-   * Menghasilkan kode soal otomatis berurutan berdasarkan jenjang & dimensi
-   * Contoh hasil: SD-LOG-01, SD-LOG-02, SMP-NUM-05
-   * @param {string} level - 'SD' atau 'SMP'
-   * @param {string} categoryKey - 'LOGICAL', 'NUMERICAL', dll
-   * @returns {Promise<string>}
-   */
-  static async getNextQuestionCode(level = LEVELS.SD, categoryKey = "LOGICAL") {
+    static async getNextQuestionCode(level = LEVELS.SD, categoryKey = "LOGICAL") {
     const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
     const catCode = this.getCategoryCodePrefix(categoryKey);
     const prefix = `${jenjang}-${catCode}-`;
@@ -157,23 +115,13 @@ class QuestionModel {
     return `${prefix}${paddedNum}`;
   }
 
-  /**
-   * Mengambil seluruh soal untuk keperluan tes skrining siswa
-   * @param {string} level - 'SD' atau 'SMP'
-   * @returns {Promise<Array<Object>>}
-   */
-  static async getByLevelForTest(level = LEVELS.SD) {
+    static async getByLevelForTest(level = LEVELS.SD) {
     const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
     const rows = await db.all("SELECT * FROM questions WHERE level = ? ORDER BY id ASC", [jenjang]);
     return rows.map(this.formatRow);
   }
 
-  /**
-   * Menambahkan soal baru ke dalam database
-   * @param {Object} data 
-   * @returns {Promise<Object>}
-   */
-  static async create(data) {
+    static async create(data) {
     const now = new Date().toISOString();
     const optionsJson = JSON.stringify(data.options || []);
 
@@ -200,13 +148,7 @@ class QuestionModel {
     return this.getById(result.lastID);
   }
 
-  /**
-   * Memperbarui soal yang sudah ada
-   * @param {number|string} id 
-   * @param {Object} data 
-   * @returns {Promise<Object|null>}
-   */
-  static async update(id, data) {
+    static async update(id, data) {
     const existing = await this.getById(id);
     if (!existing) return null;
 
@@ -245,12 +187,7 @@ class QuestionModel {
     return this.getById(id);
   }
 
-  /**
-   * Menghapus soal berdasarkan ID
-   * @param {number|string} id 
-   * @returns {Promise<boolean>}
-   */
-  static async delete(id) {
+    static async delete(id) {
     const existing = await this.getById(id);
     if (!existing) return false;
 
@@ -258,11 +195,7 @@ class QuestionModel {
     return true;
   }
 
-  /**
-   * Menghitung total soal di database
-   * @returns {Promise<number>}
-   */
-  static async count() {
+    static async count() {
     const res = await db.get("SELECT COUNT(*) as count FROM questions");
     return res ? res.count : 0;
   }
