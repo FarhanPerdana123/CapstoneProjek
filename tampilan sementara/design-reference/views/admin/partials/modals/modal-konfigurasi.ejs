@@ -1,0 +1,117 @@
+<div class="modal fade" id="modalKonfigurasi" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form class="modal-content" method="post" action="/admin/tes-skrining/<%= test.id_test %>/penilaian" id="formKonfigurasi">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalKonfigurasiTitle">Tambah Rentang Nilai</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" name="id_konfigurasi" id="k-id" value="">
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label-custom" for="k-kategori">Kategori Hasil</label>
+            <input class="form-control form-control-custom" type="text" id="k-kategori" name="kategori_hasil"
+                   placeholder="Contoh: Perlu Pendampingan" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-custom" for="k-min">Skor Minimal</label>
+            <input class="form-control form-control-custom" type="number" id="k-min" name="skor_min" value="0" min="0" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-custom" for="k-max">Skor Maksimal</label>
+            <input class="form-control form-control-custom" type="number" id="k-max" name="skor_max" value="0" min="0" required>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label-custom">Warna Kategori</label>
+            <div class="d-flex flex-wrap gap-2 pt-1">
+              <% warnaPilihan.forEach(function (warna, index) { %>
+                <label class="color-radio" title="<%= warna.label %>">
+                  <input type="radio" name="warna" value="<%= warna.key %>" <%= index === 1 ? 'checked' : '' %>>
+                  <span class="swatch" style="background:<%= warna.hex %>;"></span>
+                </label>
+              <% }); %>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label-custom" for="k-deskripsi">Deskripsi Hasil</label>
+            <textarea class="form-control form-control-custom" id="k-deskripsi" name="deskripsi" rows="3"
+                      placeholder="Penjelasan singkat mengenai kategori hasil ini..."></textarea>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label-custom" for="k-rekomendasi">Rekomendasi Tindak Lanjut</label>
+            <textarea class="form-control form-control-custom" id="k-rekomendasi" name="rekomendasi" rows="3"
+                      placeholder="Langkah yang disarankan untuk sekolah..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-brand" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-brand" data-ajax>Simpan Rentang</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var testId = "<%= test.id_test %>";
+    var modalEl = document.getElementById("modalKonfigurasi");
+    var form = document.getElementById("formKonfigurasi");
+    var title = document.getElementById("modalKonfigurasiTitle");
+
+    function pilihWarna(key) {
+      var radio = form.querySelector('input[name="warna"][value="' + key + '"]');
+      if (radio) radio.checked = true;
+    }
+
+    function resetForm() {
+      form.reset();
+      document.getElementById("k-id").value = "";
+      document.getElementById("k-kategori").value = "";
+      document.getElementById("k-min").value = "0";
+      document.getElementById("k-max").value = "0";
+      document.getElementById("k-deskripsi").value = "";
+      document.getElementById("k-rekomendasi").value = "";
+      pilihWarna("biru");
+      title.textContent = "Tambah Rentang Nilai";
+    }
+
+    ["btnTambahKonfigurasi", "btnTambahKonfigurasi2"].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) btn.addEventListener("click", resetForm);
+    });
+
+    document.querySelectorAll("[data-edit-konfigurasi]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var kid = btn.getAttribute("data-edit-konfigurasi");
+        resetForm();
+        fetch("/admin/tes-skrining/" + testId + "/penilaian/" + kid + "/json", {
+          credentials: "same-origin"
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (json) {
+            if (!json.success) throw new Error(json.message || "Gagal memuat rentang nilai.");
+            var data = json.data;
+            document.getElementById("k-id").value = data.id_konfigurasi;
+            document.getElementById("k-kategori").value = data.kategori_hasil;
+            document.getElementById("k-min").value = data.skor_min;
+            document.getElementById("k-max").value = data.skor_max;
+            document.getElementById("k-deskripsi").value = data.deskripsi;
+            document.getElementById("k-rekomendasi").value = data.rekomendasi;
+            pilihWarna(data.warna);
+            title.textContent = "Edit Rentang Nilai";
+            new bootstrap.Modal(modalEl).show();
+          })
+          .catch(function (err) {
+            window.showToast(err.message || "Gagal memuat rentang nilai.", "danger");
+          });
+      });
+    });
+  })();
+</script>

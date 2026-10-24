@@ -1,14 +1,33 @@
+/**
+ * Model soal (bank pertanyaan tes skrining kognitif).
+ * Tabel: `questions`
+ *
+ * Kolom penting:
+ *   id, questionCode, level (SD/SMP), categoryKey, category,
+ *   difficulty (EASY/MEDIUM/HARD), questionText, optionsJson,
+ *   correctAnswer, explanation, scoreWeight, createdAt, updatedAt
+ */
 
 const { db } = require("../database/db");
 const { COGNITIVE_CATEGORIES, LEVELS } = require("../config/constants");
 
 class QuestionModel {
-    static formatRow(row) {
+  /**
+   * Ubah baris database menjadi objek JavaScript yang siap dikonsumsi API.
+   * Parsing `optionsJson` dari string JSON ke array.
+   * @param {object|null} row
+   * @returns {object|null}
+   */
+  static formatRow(row) {
     if (!row) return null;
+
     let parsedOptions = [];
     try {
-      parsedOptions = typeof row.optionsJson === "string" ? JSON.parse(row.optionsJson) : (row.options || []);
-    } catch (e) {
+      parsedOptions =
+        typeof row.optionsJson === "string"
+          ? JSON.parse(row.optionsJson)
+          : row.options || [];
+    } catch {
       parsedOptions = [];
     }
 
@@ -29,7 +48,12 @@ class QuestionModel {
     };
   }
 
-    static async getAll(filters = {}) {
+  /**
+   * Ambil semua soal dengan filter opsional.
+   * @param {{ level?, categoryKey?, difficulty?, search? }} filters
+   * @returns {object[]}
+   */
+  static async getAll(filters = {}) {
     let query = "SELECT * FROM questions WHERE 1=1";
     const params = [];
 
@@ -37,17 +61,14 @@ class QuestionModel {
       query += " AND level = ?";
       params.push(filters.level.toUpperCase().trim());
     }
-
     if (filters.categoryKey) {
       query += " AND categoryKey = ?";
       params.push(filters.categoryKey.toUpperCase().trim());
     }
-
     if (filters.difficulty) {
       query += " AND difficulty = ?";
       params.push(filters.difficulty.toUpperCase().trim());
     }
-
     if (filters.search) {
       query += " AND (questionText LIKE ? OR questionCode LIKE ? OR category LIKE ?)";
       const term = `%${filters.search.trim()}%`;
@@ -60,18 +81,27 @@ class QuestionModel {
     return rows.map(this.formatRow);
   }
 
-    static async getById(id) {
+  /** Ambil satu soal berdasarkan ID. */
+  static async getById(id) {
     const row = await db.get("SELECT * FROM questions WHERE id = ?", [id]);
     return this.formatRow(row);
   }
 
-    static async getByCode(questionCode) {
+  /** Ambil satu soal berdasarkan kode uniknya. */
+  static async getByCode(questionCode) {
     if (!questionCode) return null;
-    const row = await db.get("SELECT * FROM questions WHERE questionCode = ?", [questionCode.trim()]);
+    const row = await db.get(
+      "SELECT * FROM questions WHERE questionCode = ?",
+      [questionCode.trim()]
+    );
     return this.formatRow(row);
   }
 
-    static getCategoryCodePrefix(categoryKey) {
+  /**
+   * Dapatkan prefix kode soal berdasarkan kategori kognitif.
+   * Contoh: LOGICAL → "LOG", SPATIAL → "SPA"
+   */
+  static getCategoryCodePrefix(categoryKey) {
     const key = (categoryKey || "").toUpperCase().trim();
     if (COGNITIVE_CATEGORIES[key]) {
       return COGNITIVE_CATEGORIES[key].prefix;
@@ -79,7 +109,11 @@ class QuestionModel {
     return key.length >= 3 ? key.slice(0, 3) : "GEN";
   }
 
-    static async getNextQuestionCode(level = LEVELS.SD, categoryKey = "LOGICAL") {
+  /**
+   * Generate kode soal berikutnya secara otomatis.
+   * Format: `{LEVEL}-{PREFIX}-{nomor_urut_2digit}` (contoh: "SD-LOG-05")
+   */
+  static async getNextQuestionCode(level = LEVELS.SD, categoryKey = "LOGICAL") {
     const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
     const catCode = this.getCategoryCodePrefix(categoryKey);
     const prefix = `${jenjang}-${catCode}-`;
@@ -99,35 +133,40 @@ class QuestionModel {
         const num = parseInt(match[1], 10);
         if (!isNaN(num)) {
           existingNums.add(num);
-          if (num > maxNum) {
-            maxNum = num;
-          }
+          if (num > maxNum) maxNum = num;
         }
       }
     }
 
+    // Cari nomor berikutnya yang belum dipakai
     let nextNum = maxNum + 1;
-    while (existingNums.has(nextNum)) {
-      nextNum++;
-    }
+    while (existingNums.has(nextNum)) nextNum++;
 
-    const paddedNum = String(nextNum).padStart(2, "0");
-    return `${prefix}${paddedNum}`;
+    return `${prefix}${String(nextNum).padStart(2, "0")}`;
   }
 
-    static async getByLevelForTest(level = LEVELS.SD) {
+  /**
+   * Ambil semua soal aktif sesuai jenjang untuk keperluan pelaksanaan tes.
+   * Soal yang dinonaktifkan tidak disertakan.
+   */
+  static async getByLevelForTest(level = LEVELS.SD) {
     const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
-    const rows = await db.all("SELECT * FROM questions WHERE level = ? ORDER BY id ASC", [jenjang]);
+    const rows = await db.all(
+      "SELECT * FROM questions WHERE level = ? ORDER BY id ASC",
+      [jenjang]
+    );
     return rows.map(this.formatRow);
   }
 
-    static async create(data) {
+  /** Buat soal baru. */
+  static async create(data) {
     const now = new Date().toISOString();
     const optionsJson = JSON.stringify(data.options || []);
 
     const result = await db.run(
-      `INSERT INTO questions 
-       (questionCode, level, categoryKey, category, difficulty, questionText, optionsJson, correctAnswer, explanation, scoreWeight, createdAt, updatedAt)
+      `INSERT INTO questions
+       (questionCode, level, categoryKey, category, difficulty, questionText,
+        optionsJson, correctAnswer, explanation, scoreWeight, createdAt, updatedAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.questionCode.trim(),
@@ -148,37 +187,30 @@ class QuestionModel {
     return this.getById(result.lastID);
   }
 
-    static async update(id, data) {
+  /** Perbarui soal yang sudah ada. Field yang tidak dikirim tetap menggunakan nilai lama. */
+  static async update(id, data) {
     const existing = await this.getById(id);
     if (!existing) return null;
 
     const now = new Date().toISOString();
-    const questionCode = data.questionCode ? data.questionCode.trim() : existing.questionCode;
-    const level = data.level ? data.level.toUpperCase().trim() : existing.level;
-    const categoryKey = data.categoryKey ? data.categoryKey.toUpperCase().trim() : existing.categoryKey;
-    const category = data.category ? data.category.trim() : existing.category;
-    const difficulty = data.difficulty ? data.difficulty.toUpperCase().trim() : existing.difficulty;
-    const questionText = data.questionText ? data.questionText.trim() : existing.questionText;
-    const optionsJson = data.options ? JSON.stringify(data.options) : JSON.stringify(existing.options);
-    const correctAnswer = data.correctAnswer ? data.correctAnswer.toUpperCase().trim() : existing.correctAnswer;
-    const explanation = data.explanation !== undefined ? data.explanation.trim() : existing.explanation;
-    const scoreWeight = data.scoreWeight !== undefined ? Number(data.scoreWeight) : existing.scoreWeight;
 
     await db.run(
-      `UPDATE questions 
-       SET questionCode = ?, level = ?, categoryKey = ?, category = ?, difficulty = ?, questionText = ?, optionsJson = ?, correctAnswer = ?, explanation = ?, scoreWeight = ?, updatedAt = ?
+      `UPDATE questions
+       SET questionCode = ?, level = ?, categoryKey = ?, category = ?,
+           difficulty = ?, questionText = ?, optionsJson = ?,
+           correctAnswer = ?, explanation = ?, scoreWeight = ?, updatedAt = ?
        WHERE id = ?`,
       [
-        questionCode,
-        level,
-        categoryKey,
-        category,
-        difficulty,
-        questionText,
-        optionsJson,
-        correctAnswer,
-        explanation,
-        scoreWeight,
+        data.questionCode ? data.questionCode.trim() : existing.questionCode,
+        data.level ? data.level.toUpperCase().trim() : existing.level,
+        data.categoryKey ? data.categoryKey.toUpperCase().trim() : existing.categoryKey,
+        data.category ? data.category.trim() : existing.category,
+        data.difficulty ? data.difficulty.toUpperCase().trim() : existing.difficulty,
+        data.questionText ? data.questionText.trim() : existing.questionText,
+        data.options ? JSON.stringify(data.options) : JSON.stringify(existing.options),
+        data.correctAnswer ? data.correctAnswer.toUpperCase().trim() : existing.correctAnswer,
+        data.explanation !== undefined ? data.explanation.trim() : existing.explanation,
+        data.scoreWeight !== undefined ? Number(data.scoreWeight) : existing.scoreWeight,
         now,
         id
       ]
@@ -187,7 +219,8 @@ class QuestionModel {
     return this.getById(id);
   }
 
-    static async delete(id) {
+  /** Hapus soal secara permanen (hard delete). */
+  static async delete(id) {
     const existing = await this.getById(id);
     if (!existing) return false;
 
@@ -195,7 +228,8 @@ class QuestionModel {
     return true;
   }
 
-    static async count() {
+  /** Hitung jumlah total soal di bank soal. */
+  static async count() {
     const res = await db.get("SELECT COUNT(*) as count FROM questions");
     return res ? res.count : 0;
   }

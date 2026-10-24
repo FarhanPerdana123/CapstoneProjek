@@ -1,3 +1,12 @@
+/**
+ * Controller skrining kognitif — menangani sesi tes siswa dari awal hingga hasil.
+ *
+ * Alur tes:
+ *   1. GET  /questions   → Ambil bank soal sesuai jenjang
+ *   2. POST /start       → Mulai sesi (opsional, bisa langsung ke submit)
+ *   3. POST /submit      → Kirim jawaban, hitung & simpan hasil
+ *   4. GET  /:id/result  → Lihat hasil sesi
+ */
 
 const QuestionModel = require("../models/questionModel");
 const SessionModel = require("../models/sessionModel");
@@ -8,9 +17,14 @@ const config = require("../config");
 const { LEVELS, LEVEL_LABELS } = require("../config/constants");
 
 class ScreeningController {
+  /**
+   * GET /api/screenings/questions
+   * Kembalikan bank soal berdasarkan jenjang (default: SD).
+   * Query param: ?level=SD|SMP
+   */
   static async getQuestions(req, res, next) {
     try {
-      const jenjangParam = (req.query.level || LEVELS.SD).toUpperCase().trim();
+      const jenjangParam = String(req.query.level || LEVELS.SD).toUpperCase().trim();
       const jenjang = jenjangParam === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
 
       const bankSoal = await QuestionModel.getByLevelForTest(jenjang);
@@ -22,7 +36,8 @@ class ScreeningController {
         });
       }
 
-      const soalTersaring = bankSoal.map((q) => ({
+      // Hanya kirim field yang diperlukan ke client (sembunyikan correctAnswer)
+      const soal = bankSoal.map((q) => ({
         id: q.id,
         questionCode: q.questionCode,
         categoryKey: q.categoryKey,
@@ -32,26 +47,31 @@ class ScreeningController {
         options: q.options
       }));
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         level: jenjang,
         levelLabel: LEVEL_LABELS[jenjang] || jenjang,
-        totalQuestions: soalTersaring.length,
+        totalQuestions: soal.length,
         durationMinutes: config.test.durationMinutes,
-        questions: soalTersaring
+        questions: soal
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
+  /**
+   * POST /api/screenings/start
+   * Mulai sesi tes baru dan simpan data awal siswa ke database.
+   * Body: { name, age?, grade?, school?, level? }
+   */
   static async startSession(req, res, next) {
     try {
       const { name, age, grade, school, level = LEVELS.SD } = req.body || {};
-      const currentUserId = req.user ? req.user.id : (req.body.userId || "GUEST");
+      const userId = req.user ? req.user.id : (req.body.userId || "GUEST");
       const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
 
-      if (!name || name.trim() === "") {
+      if (!name || !name.trim()) {
         return ApiResponse.error(res, {
           statusCode: 400,
           message: "Nama siswa wajib diisi."
@@ -62,15 +82,13 @@ class ScreeningController {
       if (!bankSoal || bankSoal.length === 0) {
         return ApiResponse.error(res, {
           statusCode: 400,
-          message: `Tidak dapat memulai sesi: bank soal jenjang ${jenjang} di database masih kosong.`
+          message: `Bank soal jenjang ${jenjang} masih kosong. Hubungi Super Admin.`
         });
       }
 
-      const sessionId = null;
-
-      const sessionBaru = {
-        sessionId,
-        userId: currentUserId,
+      const sesi = {
+        sessionId: null,
+        userId,
         level: jenjang,
         student: {
           name: name.trim(),
@@ -86,37 +104,44 @@ class ScreeningController {
         result: null
       };
 
-      const savedSession = await SessionModel.save(sessionBaru);
-      logger.info(`Sesi tes baru dimulai: [${savedSession.sessionId}] untuk ${name} (Jenjang: ${jenjang})`);
+      const savedSession = await SessionModel.save(sesi);
+      logger.info(`Sesi tes dimulai: [${savedSession.sessionId}] — ${name} (${jenjang})`);
 
       return res.status(201).json({
         success: true,
         message: `Sesi tes tingkat ${jenjang} berhasil dimulai.`,
         sessionId: savedSession.sessionId,
-        userId: currentUserId,
+        userId,
         level: jenjang,
-        student: sessionBaru.student,
-        startedAt: sessionBaru.startedAt,
-        totalQuestions: sessionBaru.totalQuestions
+        student: sesi.student,
+        startedAt: sesi.startedAt,
+        totalQuestions: sesi.totalQuestions
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
+  /**
+   * POST /api/screenings/:sessionId/submit  (atau /submit tanpa sessionId)
+   * Terima jawaban siswa, hitung skor, simpan hasil ke database.
+   * Body: { answers, studentInfo?, level?, roomId? }
+   */
   static async submitScreening(req, res, next) {
     try {
       const { sessionId } = req.params;
       const { answers = [], studentInfo = {}, level, roomId } = req.body;
-      const currentUserId = req.user ? req.user.id : (req.body.userId || "GUEST");
+      const userId = req.user ? req.user.id : (req.body.userId || "GUEST");
 
+      // Muat sesi lama jika sessionId tersedia
       let session = sessionId ? await SessionModel.findById(sessionId) : null;
       const activeLevel = (session && session.level) || level || studentInfo.level || LEVELS.SD;
 
       if (!session) {
+        // Submit tanpa sesi sebelumnya: buat sesi baru secara inline
         session = {
           sessionId: sessionId || null,
-          userId: currentUserId,
+          userId,
           level: activeLevel,
           student: studentInfo,
           status: "IN_PROGRESS",
@@ -124,17 +149,13 @@ class ScreeningController {
           roomId: roomId || null
         };
       } else if (req.user && session.userId === "GUEST") {
+        // Kaitkan sesi guest ke user yang sudah login
         session.userId = req.user.id;
       }
 
-      const dataSiswa = {
-        ...session.student,
-        ...studentInfo,
-        level: activeLevel
-      };
-
-      const fullBankSoal = await QuestionModel.getByLevelForTest(activeLevel);
-      const hasilEvaluasi = ScoringService.evaluateTest(answers, dataSiswa, activeLevel, fullBankSoal);
+      const dataSiswa = { ...session.student, ...studentInfo, level: activeLevel };
+      const bankSoal = await QuestionModel.getByLevelForTest(activeLevel);
+      const hasilEvaluasi = ScoringService.evaluateTest(answers, dataSiswa, activeLevel, bankSoal);
 
       session.status = "COMPLETED";
       session.completedAt = new Date().toISOString();
@@ -143,9 +164,11 @@ class ScreeningController {
       session.roomId = roomId || session.roomId;
 
       const savedSession = await SessionModel.save(session);
-      logger.info(`Sesi tes selesai dinilai: [${savedSession.sessionId}] IQ: ${hasilEvaluasi.cognitiveScore.estimatedIQ}`);
+      logger.info(
+        `Sesi tes selesai: [${savedSession.sessionId}] IQ estimasi: ${hasilEvaluasi.cognitiveScore.estimatedIQ}`
+      );
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         message: "Jawaban berhasil dinilai.",
         sessionId: savedSession.sessionId,
@@ -154,10 +177,14 @@ class ScreeningController {
         result: hasilEvaluasi
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
+  /**
+   * GET /api/screenings/:sessionId/result
+   * Ambil hasil sesi tes. User hanya bisa melihat hasil miliknya sendiri.
+   */
   static async getResult(req, res, next) {
     try {
       const { sessionId } = req.params;
@@ -170,15 +197,17 @@ class ScreeningController {
         });
       }
 
-      // Verifikasi isolasi privasi: Pengguna tidak boleh melihat hasil tes pengguna lain
-      if (req.user && session.userId !== "GUEST" && session.userId !== req.user.id && req.user.role !== "admin") {
+      // Isolasi privasi: user tidak boleh melihat hasil user lain (kecuali admin)
+      const isOwner = !req.user || session.userId === "GUEST" || session.userId === req.user.id;
+      const isAdmin = req.user && req.user.role === "admin";
+      if (!isOwner && !isAdmin) {
         return ApiResponse.error(res, {
           statusCode: 403,
-          message: "Akses ditolak. Anda tidak memiliki izin untuk melihat hasil tes pengguna lain."
+          message: "Akses ditolak. Anda tidak memiliki izin melihat hasil tes ini."
         });
       }
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         sessionId,
         userId: session.userId,
@@ -187,22 +216,26 @@ class ScreeningController {
         result: session.result
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
+  /**
+   * GET /api/screenings/history
+   * Riwayat semua tes yang sudah selesai milik user yang sedang login.
+   */
   static async getAllSessions(req, res, next) {
     try {
-      const currentUserId = req.user ? req.user.id : null;
+      const userId = req.user ? req.user.id : null;
 
-      if (!currentUserId) {
+      if (!userId) {
         return ApiResponse.error(res, {
           statusCode: 401,
           message: "Silakan login untuk melihat riwayat tes Anda."
         });
       }
 
-      const sessions = await SessionModel.findByUserId(currentUserId);
+      const sessions = await SessionModel.findByUserId(userId);
 
       const riwayat = sessions
         .filter((s) => s.result && s.result.summary)
@@ -221,58 +254,55 @@ class ScreeningController {
           }
         }));
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         count: riwayat.length,
-        user: {
-          id: req.user.id,
-          name: req.user.name,
-          email: req.user.email
-        },
+        user: { id: req.user.id, name: req.user.name, email: req.user.email },
         data: riwayat
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
+  /**
+   * GET /api/screenings/results
+   * Semua hasil tes siswa dalam ruang tes milik sekolah yang sedang login.
+   * Hanya untuk admin sekolah.
+   */
   static async getResults(req, res, next) {
     try {
       if (!req.user || req.user.role !== "admin_sekolah") {
         return ApiResponse.error(res, {
           statusCode: 403,
-          message: "Hanya admin sekolah yang dapat mengakses hasil tes"
+          message: "Hanya admin sekolah yang dapat mengakses hasil tes."
         });
       }
 
-      // Get all completed sessions for this school
       const { db } = require("../database/db");
       const results = await db.all(
-        `SELECT * FROM screening_sessions 
-         WHERE status = 'COMPLETED' AND roomId IN 
-         (SELECT id FROM test_rooms WHERE schoolId IN 
-           (SELECT id FROM schools WHERE id = ?))
+        `SELECT * FROM screening_sessions
+         WHERE status = 'COMPLETED'
+           AND roomId IN (
+             SELECT id FROM test_rooms WHERE schoolId = ?
+           )
          ORDER BY completedAt DESC`,
         [req.user.schoolId]
       );
 
-      const formattedResults = results.map(r => ({
+      const data = results.map((r) => ({
         sessionId: r.sessionId,
         roomId: r.roomId,
         level: r.level,
         studentName: r.studentName,
         studentGrade: r.studentGrade,
         completedAt: r.completedAt,
-        resultJson: r.resultJson ? JSON.parse(r.resultJson) : null
+        result: r.resultJson ? JSON.parse(r.resultJson) : null
       }));
 
-      return res.status(200).json({
-        success: true,
-        count: formattedResults.length,
-        data: formattedResults
-      });
+      return res.json({ success: true, count: data.length, data });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 }

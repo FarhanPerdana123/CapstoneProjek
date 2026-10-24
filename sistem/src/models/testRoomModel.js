@@ -1,60 +1,89 @@
+/**
+ * Model ruang tes (sesi PIN untuk siswa masuk tes).
+ * Tabel: `test_rooms`
+ *
+ * Kolom penting:
+ *   id (AUTO_INCREMENT), schoolId, pinCode (6 karakter unik, UPPERCASE),
+ *   level (SD/SMP), status (active | closed), createdAt
+ */
 
 const { db } = require("../database/db");
-const crypto = require("crypto");
+
+/** Karakter yang digunakan untuk generate PIN. */
+const PIN_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const PIN_LENGTH = 6;
 
 class TestRoomModel {
-    static async findById(id) {
+  /** Cari ruang tes berdasarkan ID. */
+  static async findById(id) {
     if (!id) return null;
-    return await db.get("SELECT * FROM test_rooms WHERE id = ?", [id]);
+    return db.get("SELECT * FROM test_rooms WHERE id = ?", [id]);
   }
 
-    static async findByPin(pinCode) {
+  /** Cari ruang tes berdasarkan PIN (case-insensitive → disimpan uppercase). */
+  static async findByPin(pinCode) {
     if (!pinCode) return null;
-    return await db.get("SELECT * FROM test_rooms WHERE pinCode = ?", [pinCode.toUpperCase()]);
+    return db.get(
+      "SELECT * FROM test_rooms WHERE pinCode = ?",
+      [pinCode.toUpperCase()]
+    );
   }
 
-    static async findBySchoolId(schoolId) {
+  /** Ambil semua ruang tes milik sekolah tertentu, diurutkan terbaru. */
+  static async findBySchoolId(schoolId) {
     if (!schoolId) return [];
-    return await db.all(
+    return db.all(
       "SELECT * FROM test_rooms WHERE schoolId = ? ORDER BY createdAt DESC",
       [schoolId]
     );
   }
 
-    static async create(roomData) {
+  /**
+   * Buat ruang tes baru.
+   * @param {{ schoolId, pinCode, level }} roomData
+   * @throws {Error} Jika PIN sudah digunakan
+   */
+  static async create(roomData) {
     const { schoolId, pinCode, level } = roomData;
     const upperPin = pinCode.toUpperCase();
 
-    // Validasi PIN sudah unik (double-check)
+    // Verifikasi keunikan PIN (double-check sebelum insert)
     const existing = await this.findByPin(upperPin);
     if (existing) {
-      throw new Error("PIN code sudah digunakan");
+      throw new Error(`PIN "${upperPin}" sudah digunakan. Coba generate PIN baru.`);
     }
 
     const result = await db.run(
       `INSERT INTO test_rooms (schoolId, pinCode, level, status)
-       VALUES (?, ?, ?, ?)`,
-      [schoolId, upperPin, level, "active"]
+       VALUES (?, ?, ?, 'active')`,
+      [schoolId, upperPin, level]
     );
 
     return this.findById(result.insertId);
   }
 
-    static async close(id) {
+  /** Tutup ruang tes (ubah status menjadi 'closed'). */
+  static async close(id) {
     await db.run("UPDATE test_rooms SET status = 'closed' WHERE id = ?", [id]);
     return this.findById(id);
   }
 
-    static async updateStatus(id, status) {
+  /** Perbarui status ruang tes secara manual. */
+  static async updateStatus(id, status) {
     await db.run("UPDATE test_rooms SET status = ? WHERE id = ?", [status, id]);
     return this.findById(id);
   }
 
-    static generateRandomPin() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  /**
+   * Generate PIN acak sepanjang 6 karakter (A-Z dan 0-9).
+   * PIN yang dihasilkan belum tentu unik — caller bertanggung jawab
+   * untuk memeriksa ketersediaan dengan `findByPin()`.
+   * @returns {string}
+   */
+  static generateRandomPin() {
     let pin = "";
-    for (let i = 0; i < 6; i++) {
-      pin += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < PIN_LENGTH; i++) {
+      pin += PIN_CHARSET.charAt(Math.floor(Math.random() * PIN_CHARSET.length));
     }
     return pin;
   }

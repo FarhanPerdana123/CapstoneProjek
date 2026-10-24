@@ -1,3 +1,7 @@
+/**
+ * Server Utama Aplikasi Skrining Kognitif (Node.js & Express).
+ * Titik masuk backend REST API.
+ */
 
 const express = require("express");
 const cors = require("cors");
@@ -15,21 +19,36 @@ const screeningRoutes = require("./routes/screeningRoutes");
 const questionRoutes = require("./routes/questionRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
+const adminApiRoutes = require("./routes/adminApiRoutes");
+const sekolahAuthRoutes = require("./routes/sekolahAuthRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : true,
+    credentials: true
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
+/* Berkas unggahan (dipakai endpoint upload gambar butir pertanyaan). */
+const UPLOAD_DIR = path.join(__dirname, "../public/uploads");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+app.use("/uploads", express.static(UPLOAD_DIR));
+
+/* Registrasi Endpoint REST API */
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminApiRoutes);
+app.use("/api/sekolah", sekolahAuthRoutes);
 app.use("/api/screenings", screeningRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/settings", requireAuth, settingsRoutes);
 
-// Health check endpoint
+/* Health check endpoint untuk monitoring server */
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
@@ -38,50 +57,22 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-const staticPath = fs.existsSync(config.paths.staticTampilan)
-  ? config.paths.staticTampilan
-  : config.paths.staticFrontend;
-
-app.use(express.static(staticPath));
-
-app.get("/admin", (req, res, next) => {
-  const adminPath = path.join(staticPath, "admin.html");
-  if (fs.existsSync(adminPath)) {
-    return res.sendFile(adminPath);
-  }
-  next();
-});
-
-// Fallback untuk SPA (Single Page Application)
-app.get("*", (req, res, next) => {
-  if (!req.path.startsWith("/api")) {
-    const indexPath = path.join(staticPath, "index.html");
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send("File antarmuka web (index.html) belum ditemukan.");
-    }
-  } else {
-    next();
-  }
-});
-
+/* Penanganan rute tidak ditemukan & error global */
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
+/* Menjalankan HTTP Server */
 const server = app.listen(config.port, () => {
-  logger.success(`=================================================`);
-  logger.success(`Sistem Skrining Kognitif Server Aktif!`);
+  logger.success("=================================================");
+  logger.success("API Skrining Kognitif Aktif!");
   logger.success(`URL Server: http://localhost:${config.port}`);
   logger.success(`Lingkungan: ${config.env}`);
-  const dbInfo = (config.db.client || "mysql") === "mysql"
-    ? `MySQL Docker (${config.db.mysql.host}:${config.db.mysql.port}/${config.db.mysql.database})`
-    : `SQLite3 (${config.db.sqlite.filename})`;
-  logger.success(`Database  : ${dbInfo}`);
-  logger.success(`=================================================`);
+  logger.success(`Database  : MySQL Docker (${config.db.mysql.host}:${config.db.mysql.port}/${config.db.mysql.database})`);
+  logger.success("Frontend  : Next.js (folder web-admin)");
+  logger.success("=================================================");
 });
 
-// Penanganan Graceful Shutdown
+/* Penanganan Graceful Shutdown */
 process.on("SIGTERM", () => {
   logger.info("Menerima sinyal SIGTERM, menutup server dengan aman...");
   server.close(() => {

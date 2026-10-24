@@ -1,19 +1,25 @@
+/**
+ * Konstanta Domain Sistem Skrining Kognitif.
+ * Berisi definisi jenjang pendidikan, kategori kognitif, klasifikasi IQ skala Wechsler,
+ * dan indikator skrining DSM-5 Kriteria A.
+ */
 
-// Jenjang pendidikan yang didukung
+/** Jenjang pendidikan yang didukung */
 const LEVELS = {
   SD: "SD",
   SMP: "SMP"
 };
 
+/** Label representasi jenjang pendidikan */
 const LEVEL_LABELS = {
   SD: "Tingkat SD (Sekolah Dasar)",
   SMP: "Tingkat SMP (Sekolah Menengah Pertama)"
 };
 
-// Tingkat kesulitan soal
+/** Tingkat kesulitan soal asesmen */
 const DIFFICULTIES = ["EASY", "MEDIUM", "HARD"];
 
-// 4 Dimensi kognitif utama
+/** 4 Dimensi kognitif utama instrumen asesmen */
 const COGNITIVE_CATEGORIES = {
   LOGICAL: {
     key: "LOGICAL",
@@ -41,7 +47,7 @@ const COGNITIVE_CATEGORIES = {
   }
 };
 
-// Status skrining indikator DSM-5 Kriteria A
+/** Status skrining indikator DSM-5 Kriteria A (ambang batas fungsi intelektual) */
 const DSM5_STATUS = {
   INDIKASI_PERLU_ASESMEN_LANJUT: "INDIKASI_PERLU_ASESMEN_LANJUT",
   BORDERLINE_INTELLECTUAL: "BORDERLINE_INTELLECTUAL",
@@ -49,7 +55,7 @@ const DSM5_STATUS = {
   NORMAL_TYPICAL: "NORMAL_TYPICAL"
 };
 
-// Rentang Klasifikasi IQ (Berdasarkan skala Wechsler / Standar Internasional)
+/** Rentang Klasifikasi IQ (Berdasarkan skala Wechsler / Standar Internasional) */
 const IQ_CLASSIFICATIONS = [
   {
     min: 130,

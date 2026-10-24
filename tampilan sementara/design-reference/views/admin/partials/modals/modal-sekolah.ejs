@@ -1,0 +1,93 @@
+<div class="modal fade" id="modalSekolah" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="/admin/kelola-sekolah" id="formSekolah">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSekolahTitle">Tambah Sekolah</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" name="id_school" id="s-id" value="">
+
+        <div class="mb-3">
+          <label class="form-label-custom" for="s-nama">Nama Sekolah</label>
+          <input class="form-control form-control-custom" type="text" id="s-nama" name="school_name"
+                 placeholder="Contoh: SD Negeri 1 Bandung" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label-custom" for="s-email">Email Sekolah</label>
+          <input class="form-control form-control-custom" type="email" id="s-email" name="email"
+                 placeholder="sekolah@contoh.id" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label-custom" for="s-password">Password</label>
+          <input class="form-control form-control-custom" type="password" id="s-password" name="password"
+                 placeholder="Minimal 6 karakter">
+          <div class="text-muted mt-1" style="font-size:.72rem;" id="s-password-hint">
+            Minimal 6 karakter untuk sekolah baru.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label-custom" for="s-alamat">Alamat</label>
+          <textarea class="form-control form-control-custom" id="s-alamat" name="alamat" rows="2"
+                    placeholder="Alamat sekolah"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label-custom" for="s-kontak">Kontak Telepon</label>
+          <input class="form-control form-control-custom" type="text" id="s-kontak" name="kontak_telepon"
+                 placeholder="08xxxxxxxxxx">
+        </div>
+
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="s-status" name="status_aktif" checked>
+          <label class="form-check-label" for="s-status" style="font-size:.85rem;">Akun sekolah aktif</label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-brand" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-brand" data-ajax>Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("modalSekolah");
+    var form = document.getElementById("formSekolah");
+    var title = document.getElementById("modalSekolahTitle");
+    var hint = document.getElementById("s-password-hint");
+
+    function resetForm() {
+      form.reset();
+      document.getElementById("s-id").value = "";
+      title.textContent = "Tambah Sekolah";
+      hint.textContent = "Minimal 6 karakter untuk sekolah baru.";
+      document.getElementById("s-status").checked = true;
+    }
+
+    var btnTambah = document.getElementById("btnTambahSekolah");
+    if (btnTambah) btnTambah.addEventListener("click", resetForm);
+
+    document.querySelectorAll("[data-edit-sekolah]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var data = JSON.parse(btn.getAttribute("data-edit-sekolah"));
+        document.getElementById("s-id").value = data.id_school;
+        document.getElementById("s-nama").value = data.school_name;
+        document.getElementById("s-email").value = data.email;
+        document.getElementById("s-password").value = "";
+        document.getElementById("s-alamat").value = data.alamat;
+        document.getElementById("s-kontak").value = data.kontak_telepon;
+        document.getElementById("s-status").checked = data.status_aktif;
+        title.textContent = "Edit Sekolah";
+        hint.textContent = "Kosongkan bila tidak ingin mengubah password.";
+        new bootstrap.Modal(modalEl).show();
+      });
+    });
+  })();
+</script>

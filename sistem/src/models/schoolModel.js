@@ -1,29 +1,37 @@
+/**
+ * Model sekolah (tabel `schools`).
+ *
+ * CATATAN: Model ini beroperasi pada tabel `schools` (skema lama/users-based).
+ * Manajemen sekolah melalui Panel Super Admin menggunakan tabel `sekolah`
+ * (lihat adminService.js). Model ini dipakai oleh `settingsRoutes.js` saja.
+ */
 
 const { db } = require("../database/db");
-const crypto = require("crypto");
 
 class SchoolModel {
-    static async findById(id) {
+  /** Cari sekolah berdasarkan ID. */
+  static async findById(id) {
     if (!id) return null;
-    return await db.get("SELECT * FROM schools WHERE id = ?", [id]);
+    return db.get("SELECT * FROM schools WHERE id = ?", [id]);
   }
 
-    static async findAll() {
-    return await db.all("SELECT * FROM schools ORDER BY schoolName ASC");
+  /** Ambil semua sekolah, diurutkan berdasarkan nama. */
+  static async findAll() {
+    return db.all("SELECT * FROM schools ORDER BY schoolName ASC");
   }
 
-    static async create(schoolData) {
+  /** Buat data sekolah baru. */
+  static async create(schoolData) {
     const { schoolName, address } = schoolData;
-
     const result = await db.run(
       "INSERT INTO schools (schoolName, address) VALUES (?, ?)",
       [schoolName, address || ""]
     );
-
     return this.findById(result.insertId);
   }
 
-    static async update(id, schoolData) {
+  /** Perbarui data sekolah. */
+  static async update(id, schoolData) {
     const { schoolName, address } = schoolData;
     await db.run(
       "UPDATE schools SET schoolName = ?, address = ? WHERE id = ?",
@@ -32,7 +40,8 @@ class SchoolModel {
     return this.findById(id);
   }
 
-    static async delete(id) {
+  /** Hapus data sekolah secara permanen (hard delete). */
+  static async delete(id) {
     await db.run("DELETE FROM schools WHERE id = ?", [id]);
   }
 }

@@ -1,3 +1,13 @@
+/**
+ * Service Penilaian & Evaluasi Asesmen Skrining Kognitif.
+ *
+ * Mengolah jawaban siswa terhadap instrumen tes untuk menghasilkan:
+ * - Skor mentah & persentase capaian
+ * - Breakdown performa per dimensi kognitif (Logika, Numerik, Verbal, Spasial)
+ * - Estimasi IQ deterministik (rentang 65 - 135) & klasifikasi skala Wechsler
+ * - Indikator skrining DSM-5 Kriteria A (ambang batas potensi hambatan fungsi intelektual)
+ * - Rekomendasi pedagogik dan diferensiasi pembelajaran
+ */
 
 const {
   LEVELS,
@@ -8,7 +18,16 @@ const {
 } = require("../config/constants");
 
 class ScoringService {
-    static evaluateTest(submittedAnswers = [], studentInfo = {}, level = LEVELS.SD, bankSoal = []) {
+  /**
+   * Mengevaluasi seluruh lembar jawaban siswa dan menghitung skor serta interpretasi.
+   *
+   * @param {Array<{questionId: number|string, studentAnswer: string}>} [submittedAnswers=[]]
+   * @param {object} [studentInfo={}]
+   * @param {string} [level=LEVELS.SD]
+   * @param {Array<object>} [bankSoal=[]]
+   * @returns {object} Hasil evaluasi lengkap beserta skor, klasifikasi IQ, dan saran belajar.
+   */
+  static evaluateTest(submittedAnswers = [], studentInfo = {}, level = LEVELS.SD, bankSoal = []) {
     const jenjang = String(level || studentInfo.level || LEVELS.SD).toUpperCase().trim();
     const jenjangValid = jenjang === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
 
@@ -89,7 +108,7 @@ class ScoringService {
 
     const totalSoal = (bankSoal || []).length;
     const persentase = skorMaksimal > 0 ? Math.round((skorMentah / skorMaksimal) * 100) : 0;
-    
+
     // Formula estimasi IQ deterministik (Rentang: 65 - 135)
     // 0% -> 65, 50% -> 100 (rata-rata), 100% -> 135
     const estimasiIQ = Math.round(65 + (persentase * 0.70));
@@ -162,7 +181,13 @@ class ScoringService {
     };
   }
 
-    static getKlasifikasiIQ(iq) {
+  /**
+   * Menentukan klasifikasi IQ berdasarkan standar internasional / skala Wechsler.
+   *
+   * @param {number} iq
+   * @returns {{category: string, levelGrade: string, colorBadge: string, description: string}}
+   */
+  static getKlasifikasiIQ(iq) {
     for (const item of IQ_CLASSIFICATIONS) {
       if (iq >= item.min) {
         return {
@@ -173,6 +198,7 @@ class ScoringService {
         };
       }
     }
+
     // Fallback terendah
     const lowest = IQ_CLASSIFICATIONS[IQ_CLASSIFICATIONS.length - 1];
     return {
@@ -183,7 +209,14 @@ class ScoringService {
     };
   }
 
-    static cekIndikatorDSM5(iq, level = LEVELS.SD) {
+  /**
+   * Skrining indikator hambatan kognitif mengacu pada pedoman DSM-5 Kriteria A.
+   *
+   * @param {number} iq
+   * @param {string} [level=LEVELS.SD]
+   * @returns {object} Status indikator, badge, judul, deskripsi, dan rujukan rekomendasi.
+   */
+  static cekIndikatorDSM5(iq, level = LEVELS.SD) {
     if (iq < 70) {
       return {
         status: DSM5_STATUS.INDIKASI_PERLU_ASESMEN_LANJUT,
@@ -227,7 +260,16 @@ class ScoringService {
     };
   }
 
-    static buatSaranBelajar(kategoriIQ, kekuatan, kelemahan, level) {
+  /**
+   * Menyusun rekomendasi pembelajaran yang dipersonalisasi berdasarkan profil kognitif siswa.
+   *
+   * @param {string} kategoriIQ
+   * @param {Array<string>} kekuatan
+   * @param {Array<string>} kelemahan
+   * @param {string} level
+   * @returns {Array<string>}
+   */
+  static buatSaranBelajar(kategoriIQ, kekuatan, kelemahan, level) {
     const saran = [];
 
     if (kategoriIQ.includes("Superior")) {

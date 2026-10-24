@@ -1,0 +1,143 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="page-title">Tes Skrining</h1>
+    <p class="page-subtitle">Kelola instrumen tes, pertanyaan, dan interpretasi hasil.</p>
+  </div>
+  <button class="btn btn-brand" type="button" data-bs-toggle="modal" data-bs-target="#modalTesBaru">
+    <i class="bi bi-plus-lg me-1"></i> Buat Tes Baru
+  </button>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-value" style="color:#2563EB;"><%= total %></div>
+        <div class="stat-icon" style="background:#EEF2FF;color:#2563EB;"><i class="bi bi-ui-checks-grid"></i></div>
+      </div>
+      <div class="stat-label mt-2">Total Instrumen</div>
+      <div class="stat-hint">Jumlah tes skrining yang tersedia</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-value" style="color:#16A34A;"><%= aktif %></div>
+        <div class="stat-icon" style="background:#DCFCE7;color:#16A34A;"><i class="bi bi-toggle-on"></i></div>
+      </div>
+      <div class="stat-label mt-2">Instrumen Aktif</div>
+      <div class="stat-hint">Dapat digunakan pada sesi skrining</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-value" style="color:#0F172A;"><%= totalSoal %></div>
+        <div class="stat-icon" style="background:#F1F5F9;color:#0F172A;"><i class="bi bi-list-check"></i></div>
+      </div>
+      <div class="stat-label mt-2">Total Pertanyaan</div>
+      <div class="stat-hint">Butir soal dari seluruh instrumen</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-value" style="color:#D97706;"><%= jenjang %></div>
+        <div class="stat-icon" style="background:#FEF3C7;color:#D97706;"><i class="bi bi-layers"></i></div>
+      </div>
+      <div class="stat-label mt-2">Jenjang Tersedia</div>
+      <div class="stat-hint">Cakupan jenjang pendidikan</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-4 pt-4 pb-3">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Daftar Instrumen</h2>
+      <p class="page-subtitle mb-0">Pilih instrumen untuk mengelola pertanyaan dan penilaian.</p>
+    </div>
+
+    <form class="d-flex gap-2" method="get" action="/admin/tes-skrining">
+      <input class="form-control form-control-custom" type="search" name="search"
+             value="<%= filter.search %>" placeholder="Cari nama tes atau jenjang">
+      <button class="btn btn-outline-brand" type="submit"><i class="bi bi-search"></i></button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-admin align-middle">
+      <thead>
+        <tr>
+          <th style="width:52px;">No</th>
+          <th class="sortable" data-sort="nama">Nama Tes <i class="bi bi-arrow-down-up"></i></th>
+          <th class="sortable" data-sort="jenjang">Jenjang <i class="bi bi-arrow-down-up"></i></th>
+          <th>Pertanyaan</th>
+          <th class="sortable" data-sort="tanggal">Dibuat <i class="bi bi-arrow-down-up"></i></th>
+          <th>Status</th>
+          <th class="text-end">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!items.length) { %>
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="bi bi-clipboard2-plus"></i>
+                Belum ada instrumen tes. Buat tes baru untuk memulai.
+              </div>
+            </td>
+          </tr>
+        <% } %>
+
+        <% items.forEach(function (item, index) { %>
+          <tr>
+            <td class="text-secondary"><%= index + 1 %></td>
+            <td>
+              <a class="fw-semibold text-decoration-none" style="font-size:.86rem;color:#0F172A;"
+                 href="/admin/tes-skrining/<%= item.id_test %>">
+                <%= item.nama_tes %>
+              </a>
+              <div class="text-muted" style="font-size:.75rem;max-width:340px;">
+                <%= item.deskripsi || 'Belum ada deskripsi' %>
+              </div>
+            </td>
+            <td><span class="badge rounded-pill badge-soft-muted"><%= item.jenjang %></span></td>
+            <td class="text-secondary"><%= item.jumlah_pertanyaan %> soal</td>
+            <td class="text-secondary text-nowrap"><%= item.tanggal_format %></td>
+            <td>
+              <span class="badge rounded-pill <%= item.status_aktif ? 'badge-soft-success' : 'badge-soft-muted' %>">
+                <%= item.status_aktif ? 'Aktif' : 'Nonaktif' %>
+              </span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="link-action me-2" href="/admin/tes-skrining/<%= item.id_test %>">Kelola</a>
+              <button class="btn btn-icon-ghost d-inline-flex me-1" type="button" title="Edit tes"
+                      data-edit-tes='<%- JSON.stringify({
+                        id_test: item.id_test,
+                        nama_tes: item.nama_tes,
+                        jenjang: item.jenjang,
+                        deskripsi: item.deskripsi || "",
+                        status_aktif: Number(item.status_aktif) === 1
+                      }) %>'>
+                <i class="bi bi-pencil"></i>
+              </button>
+              <a class="btn btn-icon-ghost d-inline-flex" href="/admin/tes-skrining/<%= item.id_test %>?tab=pertanyaan"
+                 title="Kelola pertanyaan">
+                <i class="bi bi-list-check"></i>
+              </a>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span>Menampilkan <%= items.length %> dari <%= total %> instrumen</span>
+    <span class="text-muted">Urutan: <strong><%= filter.sort %></strong> (<%= filter.dir %>)</span>
+  </div>
+</div>
+
+<%- include('partials/modals/modal-tes-baru') %>

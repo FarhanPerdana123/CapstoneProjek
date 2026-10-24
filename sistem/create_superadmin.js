@@ -1,35 +1,46 @@
-const { db } = require('./src/database/db');
-const bcrypt = require('bcryptjs');
+/**
+ * Script utilitas: Membuat akun Super Admin pertama.
+ * Jalankan sekali dengan: node create_superadmin.js
+ *
+ * Akun Super Admin disimpan di tabel `super_admin` (bukan `users`).
+ * Username, email, dan password dapat diubah sesuai kebutuhan sebelum dijalankan.
+ */
+
+const { db } = require("./src/database/db");
+const bcrypt = require("bcryptjs");
 
 async function createSuperAdmin() {
-  try {
-    const name = "Super Admin Utama";
-    const email = "superadmin@skrining.com";
-    const password = "password123";
-    
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+  const username = "superadmin";
+  const email = "superadmin@skrining.com";
+  const password = "password123";
 
-    // Cek apakah sudah ada
-    const existing = await db.get("SELECT * FROM users WHERE email = ?", [email]);
+  try {
+    // Periksa apakah akun sudah ada
+    const existing = await db.get(
+      "SELECT id_admin FROM super_admin WHERE LOWER(email) = ?",
+      [email.toLowerCase()]
+    );
+
     if (existing) {
-      console.log(`❌ Superadmin dengan email ${email} sudah ada!`);
+      console.log(`❌ Super Admin dengan email "${email}" sudah ada.`);
       process.exit(0);
     }
 
-    // Insert ke db (auto_increment ID)
+    // Hash password sebelum disimpan
+    const passwordHash = await bcrypt.hash(password, 10);
+
     await db.run(
-      "INSERT INTO users (name, email, passwordHash, role, schoolId) VALUES (?, ?, ?, ?, ?)",
-      [name, email, passwordHash, 'superadmin', null]
+      "INSERT INTO super_admin (username, email, password) VALUES (?, ?, ?)",
+      [username, email, passwordHash]
     );
 
-    console.log(`✅ Superadmin berhasil dibuat!`);
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔑 Password: ${password}`);
+    console.log("✅ Super Admin berhasil dibuat!");
+    console.log(`   Username : ${username}`);
+    console.log(`   Email    : ${email}`);
+    console.log(`   Password : ${password}  ← Segera ganti setelah login pertama!`);
     process.exit(0);
-  } catch (error) {
-    console.error("Gagal membuat superadmin:", error);
+  } catch (err) {
+    console.error("❌ Gagal membuat Super Admin:", err.message);
     process.exit(1);
   }
 }

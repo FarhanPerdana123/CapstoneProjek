@@ -1,0 +1,76 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <div class="breadcrumb-admin">
+      <a href="/admin/tes-skrining">Tes Skrining</a>
+      <span class="mx-1">/</span>
+      <span class="active"><%= test.nama_tes %></span>
+    </div>
+    <h1 class="page-title mb-1">
+      <%= test.nama_tes %>
+      <span class="badge rounded-pill <%= test.status_aktif ? 'badge-soft-success' : 'badge-soft-muted' %> ms-1" style="font-size:.68rem;vertical-align:middle;">
+        <%= test.status_aktif ? 'Aktif' : 'Nonaktif' %>
+      </span>
+    </h1>
+    <p class="page-subtitle mb-0">
+      Jenjang <%= test.jenjang %> • <%= test.jumlah_pertanyaan %> pertanyaan • <%= kategori.length %> kategori
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-outline-brand" type="button" data-bs-toggle="modal" data-bs-target="#modalTes">
+      <i class="bi bi-pencil-square me-1"></i> Edit Tes
+    </button>
+    <button class="btn btn-brand" type="button" data-bs-toggle="modal" data-bs-target="#modalPertanyaan" id="btnTambahPertanyaan">
+      <i class="bi bi-plus-lg me-1"></i> Tambah Pertanyaan
+    </button>
+  </div>
+</div>
+
+<ul class="nav nav-underline-admin mb-4" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link <%= tab === 'ringkasan' ? 'active' : '' %>" data-bs-toggle="tab"
+            data-bs-target="#tab-ringkasan" data-tab-key="ringkasan" type="button" role="tab">
+      Ringkasan
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link <%= tab === 'pertanyaan' ? 'active' : '' %>" data-bs-toggle="tab"
+            data-bs-target="#tab-pertanyaan" data-tab-key="pertanyaan" type="button" role="tab">
+      Pertanyaan <span class="text-muted">(<%= pertanyaan.total %>)</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link <%= tab === 'penilaian' ? 'active' : '' %>" data-bs-toggle="tab"
+            data-bs-target="#tab-penilaian" data-tab-key="penilaian" type="button" role="tab">
+      Penilaian
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link <%= tab === 'interpretasi' ? 'active' : '' %>" data-bs-toggle="tab"
+            data-bs-target="#tab-interpretasi" data-tab-key="interpretasi" type="button" role="tab">
+      Interpretasi
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade <%= tab === 'ringkasan' ? 'show active' : '' %>" id="tab-ringkasan" role="tabpanel">
+    <%- include('partials/tabs/ringkasan', { test: test, kategori: kategori, konfigurasi: konfigurasi }) %>
+  </div>
+
+  <div class="tab-pane fade <%= tab === 'pertanyaan' ? 'show active' : '' %>" id="tab-pertanyaan" role="tabpanel">
+    <%- include('partials/tabs/pertanyaan', { test: test, pertanyaan: pertanyaan, semuaKategori: semuaKategori, filter: filter, query: query }) %>
+  </div>
+
+  <div class="tab-pane fade <%= tab === 'penilaian' ? 'show active' : '' %>" id="tab-penilaian" role="tabpanel">
+    <%- include('partials/tabs/penilaian', { test: test, konfigurasi: konfigurasi, kategori: kategori, pertanyaan: pertanyaan, warnaPilihan: warnaPilihan }) %>
+  </div>
+
+  <div class="tab-pane fade <%= tab === 'interpretasi' ? 'show active' : '' %>" id="tab-interpretasi" role="tabpanel">
+    <%- include('partials/tabs/interpretasi', { test: test, konfigurasi: konfigurasi, warnaPilihan: warnaPilihan }) %>
+  </div>
+</div>
+
+<%- include('partials/modals/modal-tes', { test: test }) %>
+<%- include('partials/modals/modal-pertanyaan', { test: test, semuaKategori: semuaKategori }) %>
+<%- include('partials/modals/modal-konfigurasi', { test: test, warnaPilihan: warnaPilihan }) %>

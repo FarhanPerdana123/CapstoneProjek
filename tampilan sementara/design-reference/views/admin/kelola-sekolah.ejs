@@ -1,0 +1,115 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="page-title">Kelola Sekolah</h1>
+    <p class="page-subtitle">Kelola akun sekolah yang terdaftar pada platform.</p>
+  </div>
+  <button class="btn btn-brand" type="button" data-bs-toggle="modal" data-bs-target="#modalSekolah" id="btnTambahSekolah">
+    <i class="bi bi-plus-lg me-1"></i> Tambah Sekolah
+  </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-4 pt-4 pb-3">
+    <div class="d-flex flex-wrap gap-2">
+      <% [['semua','Semua'],['aktif','Aktif'],['nonaktif','Nonaktif']].forEach(function (tab) { %>
+        <a class="btn btn-sm <%= filter.status === tab[0] ? 'btn-brand' : 'btn-outline-brand' %>"
+           href="/admin/kelola-sekolah?status=<%= tab[0] %>">
+          <%= tab[1] %>
+        </a>
+      <% }); %>
+    </div>
+
+    <form class="d-flex gap-2" method="get" action="/admin/kelola-sekolah">
+      <input type="hidden" name="status" value="<%= filter.status %>">
+      <input class="form-control form-control-custom" type="search" name="search"
+             value="<%= filter.search %>" placeholder="Cari nama atau email sekolah">
+      <button class="btn btn-outline-brand" type="submit"><i class="bi bi-search"></i></button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-admin align-middle">
+      <thead>
+        <tr>
+          <th style="width:52px;">No</th>
+          <th class="sortable" data-sort="nama">Sekolah <i class="bi bi-arrow-down-up"></i></th>
+          <th>Kontak</th>
+          <th>Sesi</th>
+          <th class="sortable" data-sort="tanggal">Terdaftar <i class="bi bi-arrow-down-up"></i></th>
+          <th class="sortable" data-sort="status">Status <i class="bi bi-arrow-down-up"></i></th>
+          <th class="text-end">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!data.items.length) { %>
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="bi bi-buildings"></i>
+                Belum ada sekolah yang cocok dengan filter ini.
+              </div>
+            </td>
+          </tr>
+        <% } %>
+
+        <% data.items.forEach(function (school) { %>
+          <tr>
+            <td class="text-secondary"><%= school.no %></td>
+            <td>
+              <div class="fw-semibold" style="font-size:.86rem;"><%= school.school_name %></div>
+              <div class="text-muted" style="font-size:.75rem;"><%= school.alamat || 'Alamat belum diisi' %></div>
+            </td>
+            <td>
+              <div style="font-size:.82rem;"><%= school.email %></div>
+              <div class="text-muted" style="font-size:.75rem;"><%= school.kontak_telepon || '-' %></div>
+            </td>
+            <td class="text-secondary"><%= school.total_sesi %></td>
+            <td class="text-secondary text-nowrap"><%= school.tanggal_format %></td>
+            <td>
+              <span class="badge rounded-pill <%= school.status_aktif ? 'badge-soft-success' : 'badge-soft-danger' %>">
+                <%= school.status_aktif ? 'Aktif' : 'Nonaktif' %>
+              </span>
+            </td>
+            <td class="text-end text-nowrap">
+              <button class="btn btn-icon-ghost d-inline-flex me-1" type="button" title="Edit sekolah"
+                      data-edit-sekolah='<%- JSON.stringify({
+                        id_school: school.id_school,
+                        school_name: school.school_name,
+                        email: school.email,
+                        alamat: school.alamat || "",
+                        kontak_telepon: school.kontak_telepon || "",
+                        status_aktif: Number(school.status_aktif) === 1
+                      }) %>'>
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" action="/admin/kelola-sekolah/<%= school.id_school %>/toggle" class="d-inline">
+                <button class="btn btn-icon-ghost d-inline-flex me-1" type="submit"
+                        title="<%= school.status_aktif ? 'Nonaktifkan' : 'Aktifkan' %>">
+                  <i class="bi bi-<%= school.status_aktif ? 'pause' : 'play' %>"></i>
+                </button>
+              </form>
+              <form method="post" action="/admin/kelola-sekolah/<%= school.id_school %>/hapus" class="d-inline"
+                    data-confirm="Hapus sekolah <%= school.school_name %>? Data yang dihapus tidak dapat dikembalikan.">
+                <button class="btn btn-icon-ghost d-inline-flex" type="submit" title="Hapus">
+                  <i class="bi bi-trash text-danger"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span>Menampilkan <%= data.from %>-<%= data.to %> dari <%= data.total %> sekolah</span>
+    <%- include('partials/pagination', {
+          page: data.page,
+          totalPages: data.totalPages,
+          baseUrl: '/admin/kelola-sekolah',
+          query: query
+        }) %>
+  </div>
+</div>
+
+<%- include('partials/modals/modal-sekolah') %>

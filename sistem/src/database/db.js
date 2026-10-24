@@ -1,20 +1,33 @@
+/**
+ * Koneksi database MySQL menggunakan connection pool (mysql2/promise).
+ * Ekspor objek `db` dengan empat metode abstrak:
+ *   - run(sql, params)  → INSERT / UPDATE / DELETE
+ *   - get(sql, params)  → SELECT satu baris
+ *   - all(sql, params)  → SELECT banyak baris
+ *   - exec(sql)         → perintah DDL tanpa parameter
+ *
+ * Inisialisasi koneksi dan migrasi schema dijalankan otomatis
+ * saat modul ini pertama kali di-require.
+ */
 
-const path = require("path");
-const fs = require("fs");
 const config = require("../config");
 const logger = require("../utils/logger");
-
-const client = "mysql";
-
 const mysql = require("mysql2/promise");
 
 const pool = mysql.createPool(config.db.mysql);
 
-// Wrapper Promise untuk MySQL dengan format seragam
+/** Normalisasi parameter: ubah `undefined` menjadi `null` agar aman untuk MySQL. */
+function normalizeParams(params = []) {
+  return params.map((p) => (p === undefined ? null : p));
+}
+
 const db = {
-    async run(sql, params = []) {
-    const normalizedParams = params.map(p => (p === undefined ? null : p));
-    const [result] = await pool.query(sql, normalizedParams);
+  /**
+   * Eksekusi INSERT / UPDATE / DELETE.
+   * @returns {{ lastID, insertId, changes, affectedRows }}
+   */
+  async run(sql, params = []) {
+    const [result] = await pool.query(sql, normalizeParams(params));
     return {
       lastID: result.insertId,
       insertId: result.insertId,
@@ -23,176 +36,72 @@ const db = {
     };
   },
 
-    async get(sql, params = []) {
-    const normalizedParams = params.map(p => (p === undefined ? null : p));
-    const [rows] = await pool.query(sql, normalizedParams);
+  /**
+   * Ambil satu baris hasil SELECT.
+   * @returns {object|null}
+   */
+  async get(sql, params = []) {
+    const [rows] = await pool.query(sql, normalizeParams(params));
     return rows && rows.length > 0 ? rows[0] : null;
   },
 
-    async all(sql, params = []) {
-    const normalizedParams = params.map(p => (p === undefined ? null : p));
-    const [rows] = await pool.query(sql, normalizedParams);
+  /**
+   * Ambil semua baris hasil SELECT.
+   * @returns {object[]}
+   */
+  async all(sql, params = []) {
+    const [rows] = await pool.query(sql, normalizeParams(params));
     return rows || [];
   },
 
-    async exec(sql) {
+  /**
+   * Eksekusi perintah DDL (CREATE TABLE, ALTER TABLE, dll.) tanpa parameter.
+   */
+  async exec(sql) {
     await pool.query(sql);
   }
 };
 
-const rawDb = pool;
-
+/**
+ * Coba sambungkan ke MySQL dengan mekanisme retry (menunggu container Docker).
+ * Gagal total setelah 12 percobaan (± 30 detik).
+ */
 async function initDatabase() {
-  // Retry loop saat MySQL container baru booting
   let retries = 12;
+
   while (retries > 0) {
     try {
       const connection = await pool.getConnection();
       connection.release();
-      logger.info(`Koneksi database MySQL siap di ${config.db.mysql.host}:${config.db.mysql.port} [DB: ${config.db.mysql.database}]`);
+      logger.info(
+        `Koneksi database MySQL siap: ${config.db.mysql.host}:${config.db.mysql.port}/${config.db.mysql.database}`
+      );
       break;
     } catch (err) {
       retries--;
       if (retries === 0) {
-        logger.error("Gagal terhubung ke MySQL:", err.message);
+        logger.error("Gagal terhubung ke MySQL setelah semua percobaan:", err.message);
         return;
       }
-      logger.warn(`Menunggu database MySQL siap... (${retries} percobaan tersisa)`);
-      await new Promise(r => setTimeout(r, 2500));
+      logger.warn(`Menunggu MySQL siap... (${retries} percobaan tersisa)`);
+      await new Promise((resolve) => setTimeout(resolve, 2500));
     }
   }
 
-  try {
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS schools (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        schoolName VARCHAR(255) NOT NULL,
-        address TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        passwordHash VARCHAR(255) NOT NULL,
-        role ENUM('user', 'admin_sekolah', 'superadmin') DEFAULT 'user',
-        schoolId INT NULL UNIQUE,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS questions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        questionCode VARCHAR(64) UNIQUE NOT NULL,
-        level VARCHAR(10) NOT NULL,
-        categoryKey VARCHAR(50) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        difficulty VARCHAR(20) NOT NULL,
-        questionText TEXT NOT NULL,
-        optionsJson LONGTEXT NOT NULL,
-        correctAnswer VARCHAR(20) NOT NULL,
-        explanation TEXT,
-        scoreWeight INT DEFAULT 1,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS test_rooms (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        schoolId INT NOT NULL,
-        pinCode VARCHAR(20) UNIQUE NOT NULL,
-        level VARCHAR(10) NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'active',
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS screening_sessions (
-        sessionId INT AUTO_INCREMENT PRIMARY KEY,
-        userId INT NULL,
-        roomId INT NULL,
-        level VARCHAR(10) NOT NULL,
-        studentName VARCHAR(255) NOT NULL,
-        studentAge VARCHAR(50) NULL,
-        studentGrade VARCHAR(50) NULL,
-        studentSchool VARCHAR(255) NULL,
-        status VARCHAR(50) NOT NULL,
-        startedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        completedAt DATETIME NULL,
-        answersJson LONGTEXT NULL,
-        resultJson LONGTEXT NULL
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS system_settings (
-        \`key\` VARCHAR(100) PRIMARY KEY,
-        value TEXT NOT NULL,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-        await db.exec(`
-      CREATE TABLE IF NOT EXISTS system_logs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        action VARCHAR(100) NOT NULL,
-        description TEXT,
-        userId INT NULL,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-    // Indeks Helper
-    const ensureIndex = async (tableName, indexName, columns) => {
-      try {
-        const rows = await db.all(
-          `SHOW INDEX FROM \`${tableName}\` WHERE Key_name = ?`,
-          [indexName]
-        );
-        if (!rows || rows.length === 0) {
-          await db.exec(`CREATE INDEX \`${indexName}\` ON \`${tableName}\` (${columns})`);
-        }
-      } catch (e) {
-        // ignore duplicate
-      }
-    };
-
-    await ensureIndex("questions", "idx_questions_level_cat", "level, categoryKey");
-    await ensureIndex("questions", "idx_questions_code", "questionCode");
-    await ensureIndex("test_rooms", "idx_test_rooms_pin", "pinCode");
-    await ensureIndex("test_rooms", "idx_test_rooms_school", "schoolId");
-    await ensureIndex("test_rooms", "idx_test_rooms_status", "status");
-    await ensureIndex("screening_sessions", "idx_sessions_user", "userId");
-    await ensureIndex("screening_sessions", "idx_sessions_status", "status");
-    await ensureIndex("screening_sessions", "idx_screening_sessions_room", "roomId");
-    await ensureIndex("system_logs", "idx_system_logs_action", "action");
-    await ensureIndex("system_logs", "idx_system_logs_created", "createdAt");
-    await ensureIndex("system_logs", "idx_system_logs_user", "userId");
-
-    logger.info("Inisialisasi tabel dan indeks database MySQL berhasil.");
-  } catch (err) {
-    logger.error("Gagal melakukan inisialisasi database MySQL:", err);
-  }
+  logger.info("Connection pool MySQL siap digunakan.");
 }
 
-// Inisialisasi tabel segera saat modul pertama kali di-load
+// Inisialisasi koneksi segera saat modul di-require
 initDatabase();
 
-// Import dan jalankan migrasi (lazy-load untuk hindari circular dependency)
+// Jalankan migrasi schema setelah event loop siap (hindari circular dependency)
 setImmediate(async () => {
   try {
     const { runMigrations } = require("./migrations");
     await runMigrations();
   } catch (err) {
-    logger.error("Migrasi gagal, aplikasi tetap berjalan:", err);
+    logger.error("Migrasi gagal — aplikasi tetap berjalan:", err);
   }
 });
 
-module.exports = { db, rawDb, pool, initDatabase, client };
+module.exports = { db, pool, initDatabase };

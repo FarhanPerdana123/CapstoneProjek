@@ -1,3 +1,10 @@
+/**
+ * Controller autentikasi user umum.
+ * Menangani registrasi, login, dan pengambilan profil untuk akun di tabel `users`.
+ *
+ * Catatan: Super Admin menggunakan endpoint /api/admin/login (adminApiController),
+ * dan akun Sekolah menggunakan /api/sekolah/login (sekolahAuthController).
+ */
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -7,7 +14,11 @@ const ApiResponse = require("../utils/apiResponse");
 const logger = require("../utils/logger");
 
 class AuthController {
-    static async register(req, res, next) {
+  /**
+   * POST /api/auth/register
+   * Daftar akun baru. Role default adalah "user".
+   */
+  static async register(req, res, next) {
     try {
       const { name, email, password, role = "user" } = req.body || {};
 
@@ -20,8 +31,7 @@ class AuthController {
 
       const emailBersih = email.trim().toLowerCase();
 
-      const existingUser = await UserModel.findByEmail(emailBersih);
-      if (existingUser) {
+      if (await UserModel.findByEmail(emailBersih)) {
         return ApiResponse.error(res, {
           statusCode: 409,
           message: "Email sudah digunakan. Silakan gunakan email lain atau langsung login."
@@ -35,9 +45,7 @@ class AuthController {
         });
       }
 
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(password, salt);
-
+      const passwordHash = await bcrypt.hash(password, 10);
       const userBaru = await UserModel.create({
         name: name.trim(),
         email: emailBersih,
@@ -51,7 +59,7 @@ class AuthController {
         { expiresIn: config.jwt.expiresIn }
       );
 
-      logger.info(`Pengguna baru terdaftar: ${userBaru.email} (${userBaru.id})`);
+      logger.info(`Pengguna baru terdaftar: ${userBaru.email} (ID: ${userBaru.id})`);
 
       return res.status(201).json({
         success: true,
@@ -66,11 +74,15 @@ class AuthController {
         }
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async login(req, res, next) {
+  /**
+   * POST /api/auth/login
+   * Login dengan email & password. Mengembalikan token JWT.
+   */
+  static async login(req, res, next) {
     try {
       const { email, password } = req.body || {};
 
@@ -81,18 +93,11 @@ class AuthController {
         });
       }
 
-      const emailBersih = email.trim().toLowerCase();
-      const user = await UserModel.findByEmail(emailBersih);
+      const user = await UserModel.findByEmail(email.trim().toLowerCase());
 
-      if (!user) {
-        return ApiResponse.error(res, {
-          statusCode: 401,
-          message: "Email atau password yang Anda masukkan salah."
-        });
-      }
-
-      const passwordCocok = await bcrypt.compare(password, user.passwordHash);
-      if (!passwordCocok) {
+      // Gunakan pesan error generik untuk keamanan (tidak bocorkan apakah email ada)
+      const authFailed = !user || !(await bcrypt.compare(password, user.passwordHash));
+      if (authFailed) {
         return ApiResponse.error(res, {
           statusCode: 401,
           message: "Email atau password yang Anda masukkan salah."
@@ -105,9 +110,9 @@ class AuthController {
         { expiresIn: config.jwt.expiresIn }
       );
 
-      logger.info(`Login sukses: ${user.email} (${user.id})`);
+      logger.info(`Login sukses: ${user.email} (ID: ${user.id})`);
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         message: "Login berhasil.",
         token,
@@ -120,11 +125,16 @@ class AuthController {
         }
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static getProfile(req, res) {
+  /**
+   * GET /api/auth/me
+   * Kembalikan payload token JWT sebagai profil user yang sedang login.
+   * Data lengkap bisa diambil dari database jika diperlukan.
+   */
+  static getProfile(req, res) {
     return ApiResponse.success(res, {
       message: "Profil user berhasil diambil.",
       data: req.user

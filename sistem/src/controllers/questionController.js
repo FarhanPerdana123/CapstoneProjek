@@ -1,70 +1,88 @@
+/**
+ * Controller manajemen bank soal (CRUD soal tes skrining).
+ * Endpoint ini dikelola oleh /api/questions.
+ *
+ * Aturan akses:
+ *   - Baca (getAll, getById, generateCode): publik tanpa autentikasi
+ *   - Tulis (create, update, delete): hanya superadmin yang terautentikasi
+ *     (validasi dilakukan di dalam controller, bukan di route,
+ *      karena endpoint menggunakan optionalAuth)
+ */
 
 const QuestionModel = require("../models/questionModel");
 const SystemLogsService = require("../services/systemLogsService");
 const ApiResponse = require("../utils/apiResponse");
 const logger = require("../utils/logger");
-const { LEVELS, DIFFICULTIES, COGNITIVE_CATEGORIES } = require("../config/constants");
+const { LEVELS, DIFFICULTIES } = require("../config/constants");
 
 class QuestionController {
-    static async getAll(req, res, next) {
+  /**
+   * GET /api/questions/
+   * Ambil semua soal dengan filter opsional: level, categoryKey, difficulty, search.
+   */
+  static async getAll(req, res, next) {
     try {
       const { level, categoryKey, difficulty, search } = req.query;
       const questions = await QuestionModel.getAll({ level, categoryKey, difficulty, search });
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         count: questions.length,
         data: questions
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async generateCode(req, res, next) {
+  /**
+   * GET /api/questions/generate-code
+   * Generate kode soal berikutnya berdasarkan jenjang dan kategori.
+   * Query param: ?level=SD&categoryKey=LOGICAL
+   */
+  static async generateCode(req, res, next) {
     try {
       const { level = LEVELS.SD, categoryKey = "LOGICAL" } = req.query;
       const jenjang = String(level).toUpperCase().trim() === LEVELS.SMP ? LEVELS.SMP : LEVELS.SD;
-      const catKey = (categoryKey || "LOGICAL").toUpperCase().trim();
+      const catKey = String(categoryKey || "LOGICAL").toUpperCase().trim();
       const code = await QuestionModel.getNextQuestionCode(jenjang, catKey);
 
-      return res.status(200).json({
+      return res.json({
         success: true,
-        data: {
-          code,
-          level: jenjang,
-          categoryKey: catKey
-        }
+        data: { code, level: jenjang, categoryKey: catKey }
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async getById(req, res, next) {
+  /**
+   * GET /api/questions/:id
+   * Ambil detail satu soal berdasarkan ID.
+   */
+  static async getById(req, res, next) {
     try {
-      const { id } = req.params;
-      const question = await QuestionModel.getById(id);
+      const question = await QuestionModel.getById(req.params.id);
 
       if (!question) {
         return ApiResponse.error(res, {
           statusCode: 404,
-          message: `Soal dengan ID ${id} tidak ditemukan.`
+          message: `Soal dengan ID ${req.params.id} tidak ditemukan.`
         });
       }
 
-      return res.status(200).json({
-        success: true,
-        data: question
-      });
+      return res.json({ success: true, data: question });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async create(req, res, next) {
+  /**
+   * POST /api/questions/
+   * Tambah soal baru. Hanya superadmin yang dapat melakukan ini.
+   */
+  static async create(req, res, next) {
     try {
-      // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat menambah soal baru
       if (req.user && req.user.role !== "superadmin") {
         return ApiResponse.error(res, {
           statusCode: 403,
@@ -85,41 +103,40 @@ class QuestionController {
         scoreWeight = 1
       } = req.body || {};
 
-            if (!questionCode || !level || !categoryKey || !category || !difficulty || !questionText || !options || !correctAnswer) {
+      if (!questionCode || !level || !categoryKey || !category || !difficulty || !questionText || !options || !correctAnswer) {
         return ApiResponse.error(res, {
           statusCode: 400,
           message: "Field wajib: questionCode, level (SD/SMP), categoryKey, category, difficulty (EASY/MEDIUM/HARD), questionText, options, correctAnswer."
         });
       }
 
-            const jenjang = level.toUpperCase().trim();
+      const jenjang = level.toUpperCase().trim();
       if (![LEVELS.SD, LEVELS.SMP].includes(jenjang)) {
         return ApiResponse.error(res, {
           statusCode: 400,
-          message: "Jenjang tidak valid. Pilihan jenjang yang diterima: 'SD' atau 'SMP'."
+          message: "Jenjang tidak valid. Pilihan: 'SD' atau 'SMP'."
         });
       }
 
-            const tingkatKesulitan = difficulty.toUpperCase().trim();
+      const tingkatKesulitan = difficulty.toUpperCase().trim();
       if (!DIFFICULTIES.includes(tingkatKesulitan)) {
         return ApiResponse.error(res, {
           statusCode: 400,
-          message: `Tingkat kesulitan tidak valid. Pilihan yang diterima: ${DIFFICULTIES.join(", ")}.`
+          message: `Tingkat kesulitan tidak valid. Pilihan: ${DIFFICULTIES.join(", ")}.`
         });
       }
 
-            if (!Array.isArray(options) || options.length < 2) {
+      if (!Array.isArray(options) || options.length < 2) {
         return ApiResponse.error(res, {
           statusCode: 400,
-          message: "Options harus berupa array pilihan jawaban dengan minimal 2 item pilihan."
+          message: "Options harus berupa array dengan minimal 2 pilihan jawaban."
         });
       }
 
-            const existing = await QuestionModel.getByCode(questionCode.trim());
-      if (existing) {
+      if (await QuestionModel.getByCode(questionCode.trim())) {
         return ApiResponse.error(res, {
           statusCode: 409,
-          message: `Kode soal '${questionCode}' sudah terdaftar dalam database. Gunakan kode unik lain.`
+          message: `Kode soal '${questionCode}' sudah terdaftar. Gunakan kode yang unik.`
         });
       }
 
@@ -137,30 +154,30 @@ class QuestionController {
       });
 
       const actorId = req.user ? req.user.id : "SYSTEM";
-      const actorEmail = req.user ? req.user.email : "system";
-
-      // Log ke system_logs
       await SystemLogsService.logAction(
         "CREATE_QUESTION",
-        `Soal baru dibuat: ${created.questionCode} (${jenjang} - ${categoryKey})`,
+        `Soal baru: ${created.questionCode} (${jenjang} - ${categoryKey})`,
         actorId
       );
 
-      logger.info(`Soal baru berhasil dibuat: [${created.questionCode}] ID ${created.id} oleh ${actorEmail}`);
+      logger.info(`Soal baru dibuat: [${created.questionCode}] ID ${created.id}`);
 
       return res.status(201).json({
         success: true,
-        message: "Soal baru berhasil ditambahkan ke database.",
+        message: "Soal baru berhasil ditambahkan.",
         data: created
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async update(req, res, next) {
+  /**
+   * PUT /api/questions/:id
+   * Perbarui soal. Hanya superadmin yang dapat melakukan ini.
+   */
+  static async update(req, res, next) {
     try {
-      // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat mengubah soal
       if (req.user && req.user.role !== "superadmin") {
         return ApiResponse.error(res, {
           statusCode: 403,
@@ -178,12 +195,7 @@ class QuestionController {
         });
       }
 
-      const {
-        questionCode,
-        level,
-        difficulty,
-        options
-      } = req.body || {};
+      const { level, difficulty, options, questionCode } = req.body || {};
 
       if (level && ![LEVELS.SD, LEVELS.SMP].includes(level.toUpperCase().trim())) {
         return ApiResponse.error(res, {
@@ -202,47 +214,48 @@ class QuestionController {
       if (options && (!Array.isArray(options) || options.length < 2)) {
         return ApiResponse.error(res, {
           statusCode: 400,
-          message: "Options harus berupa array pilihan jawaban dengan minimal 2 item."
+          message: "Options harus berupa array dengan minimal 2 pilihan jawaban."
         });
       }
 
+      // Pastikan kode baru tidak bentrok dengan soal lain
       if (questionCode && questionCode.trim() !== existing.questionCode) {
         const duplicate = await QuestionModel.getByCode(questionCode.trim());
         if (duplicate && duplicate.id !== Number(id)) {
           return ApiResponse.error(res, {
             statusCode: 409,
-            message: `Kode soal '${questionCode}' sudah digunakan oleh soal lain.`
+            message: `Kode soal '${questionCode}' sudah digunakan soal lain.`
           });
         }
       }
 
       const updated = await QuestionModel.update(id, req.body);
-
       const actorId = req.user ? req.user.id : "SYSTEM";
-      const actorEmail = req.user ? req.user.email : "system";
 
-      // Log ke system_logs
       await SystemLogsService.logAction(
         "UPDATE_QUESTION",
         `Soal diperbarui: ${existing.questionCode} → ${updated.questionCode}`,
         actorId
       );
 
-      logger.info(`Soal ID ${id} diperbarui: [${updated.questionCode}] oleh ${actorEmail}`);
+      logger.info(`Soal ID ${id} diperbarui: [${updated.questionCode}]`);
 
-      return res.status(200).json({
+      return res.json({
         success: true,
-        message: "Soal berhasil diperbarui di database.",
+        message: "Soal berhasil diperbarui.",
         data: updated
       });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 
-    static async delete(req, res, next) {
+  /**
+   * DELETE /api/questions/:id
+   * Hapus soal secara permanen. Hanya superadmin yang dapat melakukan ini.
+   */
+  static async delete(req, res, next) {
     try {
-      // RBAC: Jika request membawa autentikasi, hanya superadmin yang dapat menghapus soal
       if (req.user && req.user.role !== "superadmin") {
         return ApiResponse.error(res, {
           statusCode: 403,
@@ -260,33 +273,31 @@ class QuestionController {
         });
       }
 
-      const success = await QuestionModel.delete(id);
+      const deleted = await QuestionModel.delete(id);
 
-      if (success) {
-        const actorId = req.user ? req.user.id : "SYSTEM";
-        const actorEmail = req.user ? req.user.email : "system";
-
-        // Log ke system_logs
-        await SystemLogsService.logAction(
-          "DELETE_QUESTION",
-          `Soal dihapus: ${existing.questionCode} (ID ${id})`,
-          actorId
-        );
-
-        logger.info(`Soal ID ${id} (${existing.questionCode}) berhasil dihapus oleh ${actorEmail}.`);
-        return res.status(200).json({
-          success: true,
-          message: `Soal ID ${id} (${existing.questionCode}) berhasil dihapus dari database.`,
-          deletedId: Number(id)
-        });
-      } else {
+      if (!deleted) {
         return ApiResponse.error(res, {
           statusCode: 500,
           message: "Gagal menghapus soal dari database."
         });
       }
+
+      const actorId = req.user ? req.user.id : "SYSTEM";
+      await SystemLogsService.logAction(
+        "DELETE_QUESTION",
+        `Soal dihapus: ${existing.questionCode} (ID ${id})`,
+        actorId
+      );
+
+      logger.info(`Soal ID ${id} (${existing.questionCode}) berhasil dihapus.`);
+
+      return res.json({
+        success: true,
+        message: `Soal '${existing.questionCode}' berhasil dihapus.`,
+        deletedId: Number(id)
+      });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   }
 }

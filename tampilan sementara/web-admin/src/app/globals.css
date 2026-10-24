@@ -1,0 +1,240 @@
+/* =====================================================================
+   CSS POLOS UNTUK TESTING BE (tanpa desain)
+   Tampilan sengaja dibuat mendekati HTML biasa agar fungsional,
+   tidak bergaya panel desainer. Class lama tetap dibiarkan ada
+   di JSX, tapi di sini tidak diberi dekorasi.
+   ===================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #000;
+  background: #fff;
+}
+
+a {
+  color: #0000ee;
+}
+
+/* Layout dashboard: sidebar tetap terlihat, tapi polos */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  padding: 12px;
+  border-right: 1px solid #000;
+  background: #fff;
+}
+
+.main {
+  flex: 1;
+  padding: 16px;
+}
+
+/* Heading dan teks */
+h1 {
+  font-size: 1.5em;
+  margin: 0 0 0.5em;
+}
+
+h2 {
+  font-size: 1.2em;
+  margin: 0 0 0.5em;
+}
+
+.muted {
+  color: #555;
+}
+
+/* Tabel polos */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+th,
+td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Form polos */
+.field {
+  margin-bottom: 12px;
+}
+
+.field label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid #000;
+  background: #fff;
+  width: 100%;
+}
+
+textarea {
+  min-height: 80px;
+}
+
+button {
+  font: inherit;
+  padding: 5px 10px;
+  border: 1px solid #000;
+  background: #eee;
+  color: #000;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Alert sederhana */
+.alert {
+  border: 1px solid #000;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.alert.error {
+  background: #fdd;
+}
+
+.alert.success {
+  background: #dfd;
+}
+
+/* Kartu & wrapper login disamakan jadi kotak polos */
+.card,
+.login-card {
+  border: 1px solid #000;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* Navigasi sidebar polos */
+.nav-item {
+  display: block;
+  padding: 4px 6px;
+  color: #000;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  text-decoration: underline;
+}
+
+.nav-item.active {
+  font-weight: bold;
+}
+
+/* Berbagai class dekoratif lama dibiarkan netral */
+.brand,
+.brand-icon,
+.brand-title,
+.brand-sub {
+  all: unset;
+  display: block;
+}
+
+.brand-title {
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.avatar {
+  display: inline-block;
+  border: 1px solid #000;
+  padding: 2px 6px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Grid statistik dibuat polos */
+.stats-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.stats-grid .card {
+  min-width: 140px;
+}
+
+/* Modal polos */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background: #fff;
+  border: 1px solid #000;
+  padding: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+/* Tombol tab polos */
+.tab-btn {
+  border: 1px solid #000;
+  background: #eee;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #fff;
+  font-weight: bold;
+}
