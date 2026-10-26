@@ -1,18 +1,14 @@
 # Web Admin — Skrining Kognitif (Next.js)
 
 Frontend **Panel Super Admin** berbasis Next.js (App Router + TypeScript),
-mengonsumsi REST API dari backend Express di folder `../../sistem`.
+mengonsumsi REST API dari backend Express di folder `../sistem`.
 
 ## Arsitektur
 
 ```
-sistem/                  -> backend Node.js (Express), API-only, port 5000
-tampilan sementara/
-├── web-admin/           -> frontend Next.js (folder ini), port 3000
-├── design-reference/    -> arsip desain panel admin lama (EJS + CSS + JS)
-├── legacy-vanilla/      -> arsip prototype HTML vanilla lama
-├── index.html           -> prototype halaman siswa (belum dimigrasi)
-└── indexV2.html         -> prototype halaman siswa v2 (belum dimigrasi)
+sistem/              -> backend Node.js (Express), API-only, port 5000
+web-admin/           -> frontend Next.js (folder ini), port 3000
+_legacy-reference/   -> arsip desain panel admin lama (EJS + CSS + JS)
 ```
 
 ## Menjalankan
@@ -116,4 +112,4 @@ src/
 - Styling **tidak** lagi bergantung CDN (Bootstrap dihapus), jadi tampilan
   tetap normal tanpa internet.
 - Desain asli (EJS, `admin.css`, `admin.js`) tetap tersimpan di
-  `../design-reference/` sebagai acuan visual.
+  `../_legacy-reference/design-reference/` sebagai acuan visual.

@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "create-superadmin": "node create_superadmin.js",
+    "create-superadmin": "node scripts/create_superadmin.js",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },

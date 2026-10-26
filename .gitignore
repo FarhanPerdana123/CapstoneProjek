@@ -15,6 +15,13 @@ sistem/public/uploads/*
 *.log
 npm-debug.log*
 
+# TypeScript build cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Legacy archives
+_legacy-reference/
+
 # Environment variables
 .env
 .env.local
@@ -23,3 +30,4 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+

@@ -15,7 +15,8 @@ Proyek ini menggunakan arsitektur *decoupled* (backend API terpisah dari fronten
 │   └── mysql/
 │       └── init.sql                # Skema basis data lengkap & data seed awal
 ├── sistem/                         # Backend REST API (Node.js & Express)
-│   ├── create_superadmin.js        # Script CLI untuk membuat akun Super Admin
+│   ├── scripts/
+│   │   └── create_superadmin.js    # Script CLI untuk membuat akun Super Admin
 │   ├── package.json
 │   ├── public/uploads/             # Direktori penyimpanan unggahan gambar soal
 │   └── src/
@@ -28,9 +29,8 @@ Proyek ini menggunakan arsitektur *decoupled* (backend API terpisah dari fronten
 │       ├── middlewares/            # Middleware auth, role (RBAC), error & request logging
 │       ├── routes/                 # Definisi rute Express
 │       └── utils/                  # Utilitas logger, apiResponse, dan custom error
-└── tampilan sementara/             # Frontend & aset desain
-    ├── web-admin/                  # Panel Super Admin (Next.js 15 App Router + TypeScript, port 3000)
-    └── design-reference/           # Arsip referensi desain visual UI/UX
+├── web-admin/                      # Panel Super Admin (Next.js 15 App Router + TypeScript, port 3000)
+└── _legacy-reference/              # Arsip legacy acuan desain visual & template EJS lama (gitignored)
 ```
 
 ---
@@ -94,7 +94,7 @@ Health check endpoint: `http://localhost:5000/api/health`
 Buka terminal kedua dan masuk ke direktori frontend:
 
 ```bash
-cd "tampilan sementara/web-admin"
+cd web-admin
 npm install
 npm run dev
 ```

@@ -1,12 +1,12 @@
 /**
  * Script utilitas: Membuat akun Super Admin pertama.
- * Jalankan sekali dengan: node create_superadmin.js
+ * Jalankan sekali dengan: node scripts/create_superadmin.js (atau npm run create-superadmin)
  *
  * Akun Super Admin disimpan di tabel `super_admin` (bukan `users`).
  * Username, email, dan password dapat diubah sesuai kebutuhan sebelum dijalankan.
  */
 
-const { db } = require("./src/database/db");
+const { db } = require("../src/database/db");
 const bcrypt = require("bcryptjs");
 
 async function createSuperAdmin() {

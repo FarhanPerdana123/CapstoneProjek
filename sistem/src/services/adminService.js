@@ -11,7 +11,6 @@
 
 const { db } = require("../database/db");
 const bcrypt = require("bcryptjs");
-const { ambilWarna, PILIHAN_WARNA } = require("../config/adminTheme");
 
 /** Jumlah item default per halaman untuk paginasi */
 const PER_PAGE = 8;
